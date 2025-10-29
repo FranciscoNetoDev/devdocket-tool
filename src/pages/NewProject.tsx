@@ -42,6 +42,22 @@ export default function NewProject() {
     e.preventDefault();
     if (!user) return;
 
+    // Validação básica
+    if (!formData.name.trim()) {
+      toast.error("O nome do projeto é obrigatório");
+      return;
+    }
+
+    if (!formData.key.trim()) {
+      toast.error("A chave do projeto é obrigatória");
+      return;
+    }
+
+    if (formData.key.length < 2 || formData.key.length > 10) {
+      toast.error("A chave deve ter entre 2 e 10 caracteres");
+      return;
+    }
+
     setLoading(true);
     try {
       // Primeiro, verifica se existe uma organização ou cria uma padrão
@@ -51,7 +67,7 @@ export default function NewProject() {
         .from("organizations")
         .select("id")
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (existingOrg) {
         orgId = existingOrg.id;
@@ -63,7 +79,12 @@ export default function NewProject() {
           .select()
           .single();
 
-        if (orgError) throw orgError;
+        if (orgError) {
+          if (orgError.code === '23505') {
+            toast.error("Já existe uma organização. Tente novamente.");
+          }
+          throw orgError;
+        }
         orgId = newOrg.id;
 
         // Adiciona role de admin para o usuário
@@ -76,20 +97,39 @@ export default function NewProject() {
           });
       }
 
+      // Verifica se já existe um projeto com essa chave
+      const { data: existingProject } = await (supabase as any)
+        .from("projects")
+        .select("id")
+        .eq("key", formData.key)
+        .eq("org_id", orgId)
+        .maybeSingle();
+
+      if (existingProject) {
+        toast.error("Já existe um projeto com essa chave. Escolha outra.");
+        setLoading(false);
+        return;
+      }
+
       // Cria o projeto
       const { data: project, error: projectError } = await (supabase as any)
         .from("projects")
         .insert({
           org_id: orgId,
-          name: formData.name,
-          key: formData.key,
-          description: formData.description,
+          name: formData.name.trim(),
+          key: formData.key.trim().toUpperCase(),
+          description: formData.description.trim() || null,
           created_by: user.id,
         })
         .select()
         .single();
 
-      if (projectError) throw projectError;
+      if (projectError) {
+        if (projectError.code === '23505') {
+          toast.error("Já existe um projeto com essa chave.");
+        }
+        throw projectError;
+      }
 
       // Adiciona o usuário como membro do projeto
       const { error: memberError } = await (supabase as any)

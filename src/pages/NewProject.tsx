@@ -60,23 +60,23 @@ export default function NewProject() {
 
     setLoading(true);
     try {
-      // Usa função RPC para criar organização e atribuir role de admin automaticamente
+      // Usa função RPC para criar/obter organização e atribuir role de admin automaticamente
       const { data: orgId, error: orgError } = await supabase.rpc(
         'create_organization_with_admin',
         { org_name: 'Minha Organização' }
       );
 
       if (orgError) {
-        console.error("Error creating organization:", orgError);
-        toast.error("Erro ao criar organização");
+        console.error("Error with organization:", orgError);
+        toast.error("Erro ao configurar organização");
         throw orgError;
       }
 
-      // Verifica se já existe um projeto com essa chave
+      // Verifica se já existe um projeto com essa chave na organização
       const { data: existingProject } = await (supabase as any)
         .from("projects")
         .select("id")
-        .eq("key", formData.key)
+        .eq("key", formData.key.trim().toUpperCase())
         .eq("org_id", orgId)
         .maybeSingle();
 
@@ -86,7 +86,7 @@ export default function NewProject() {
         return;
       }
 
-      // Cria o projeto
+      // Cria o projeto (o trigger adiciona automaticamente o criador como membro)
       const { data: project, error: projectError } = await (supabase as any)
         .from("projects")
         .insert({
@@ -100,28 +100,22 @@ export default function NewProject() {
         .single();
 
       if (projectError) {
+        console.error("Error creating project:", projectError);
         if (projectError.code === '23505') {
           toast.error("Já existe um projeto com essa chave.");
+        } else {
+          toast.error(projectError.message || "Erro ao criar projeto");
         }
         throw projectError;
       }
-
-      // Adiciona o usuário como membro do projeto
-      const { error: memberError } = await (supabase as any)
-        .from("project_members")
-        .insert({
-          project_id: project.id,
-          user_id: user.id,
-          role: "admin",
-        });
-
-      if (memberError) throw memberError;
 
       toast.success("Projeto criado com sucesso!");
       navigate(`/projects/${project.id}`);
     } catch (error: any) {
       console.error("Error creating project:", error);
-      toast.error(error.message || "Erro ao criar projeto");
+      if (!error.message?.includes("23505")) {
+        toast.error(error.message || "Erro ao criar projeto");
+      }
     } finally {
       setLoading(false);
     }

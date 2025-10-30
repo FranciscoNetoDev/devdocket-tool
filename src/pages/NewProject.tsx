@@ -60,41 +60,16 @@ export default function NewProject() {
 
     setLoading(true);
     try {
-      // Primeiro, verifica se existe uma organização ou cria uma padrão
-      let orgId: string;
-      
-      const { data: existingOrg } = await (supabase as any)
-        .from("organizations")
-        .select("id")
-        .limit(1)
-        .maybeSingle();
+      // Usa função RPC para criar organização e atribuir role de admin automaticamente
+      const { data: orgId, error: orgError } = await supabase.rpc(
+        'create_organization_with_admin',
+        { org_name: 'Minha Organização' }
+      );
 
-      if (existingOrg) {
-        orgId = existingOrg.id;
-      } else {
-        // Cria organização padrão
-        const { data: newOrg, error: orgError } = await (supabase as any)
-          .from("organizations")
-          .insert({ name: "Minha Organização" })
-          .select()
-          .single();
-
-        if (orgError) {
-          if (orgError.code === '23505') {
-            toast.error("Já existe uma organização. Tente novamente.");
-          }
-          throw orgError;
-        }
-        orgId = newOrg.id;
-
-        // Adiciona role de admin para o usuário
-        await (supabase as any)
-          .from("user_roles")
-          .insert({
-            user_id: user.id,
-            role: "admin",
-            org_id: orgId,
-          });
+      if (orgError) {
+        console.error("Error creating organization:", orgError);
+        toast.error("Erro ao criar organização");
+        throw orgError;
       }
 
       // Verifica se já existe um projeto com essa chave

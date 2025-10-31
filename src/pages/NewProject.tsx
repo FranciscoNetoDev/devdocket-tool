@@ -89,7 +89,7 @@ export default function NewProject() {
         return;
       }
 
-      // Cria o projeto (o trigger adiciona automaticamente o criador como membro)
+      // Cria o projeto (created_by será definido automaticamente pelo trigger)
       const { data: project, error: projectError } = await (supabase as any)
         .from("projects")
         .insert({
@@ -97,7 +97,6 @@ export default function NewProject() {
           name: formData.name.trim(),
           key: formData.key.trim().toUpperCase(),
           description: formData.description.trim() || null,
-          created_by: user.id,
         })
         .select()
         .single();

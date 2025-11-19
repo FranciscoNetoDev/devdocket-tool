@@ -17,6 +17,7 @@ import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import CreateSprintDialog from "./CreateSprintDialog";
 import SprintDetailView from "./SprintDetailView";
+import RetrospectiveDialog from "../project/RetrospectiveDialog";
 
 interface Sprint {
   id: string;
@@ -32,8 +33,10 @@ export default function SprintsSection() {
   const { user } = useAuth();
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [retrospectiveDialogOpen, setRetrospectiveDialogOpen] = useState(false);
+  const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
   const [currentSprintIndex, setCurrentSprintIndex] = useState(0);
 
   useEffect(() => {
@@ -153,6 +156,23 @@ export default function SprintsSection() {
 
   const handleCompleteSprint = async (sprint: Sprint) => {
     try {
+      // Check if sprint has a retrospective
+      const { data: retro, error: retroError } = await supabase
+        .from("retrospectives")
+        .select("id")
+        .eq("sprint_id", sprint.id)
+        .maybeSingle();
+
+      if (retroError) throw retroError;
+
+      if (!retro) {
+        // No retrospective yet, open dialog
+        setSprintToComplete(sprint);
+        setRetrospectiveDialogOpen(true);
+        return;
+      }
+
+      // Has retrospective, complete sprint
       const { error } = await supabase
         .from("sprints")
         .update({ status: "completed" })
@@ -161,6 +181,28 @@ export default function SprintsSection() {
       if (error) throw error;
 
       toast.success("Sprint concluída!");
+      fetchSprints();
+    } catch (error: any) {
+      console.error("Error completing sprint:", error);
+      toast.error("Erro ao concluir sprint");
+    }
+  };
+
+  const handleRetrospectiveSuccess = async () => {
+    if (!sprintToComplete) return;
+
+    try {
+      // Complete the sprint after retrospective is saved
+      const { error } = await supabase
+        .from("sprints")
+        .update({ status: "completed" })
+        .eq("id", sprintToComplete.id);
+
+      if (error) throw error;
+
+      toast.success("Sprint concluída com retrospectiva!");
+      setSprintToComplete(null);
+      setRetrospectiveDialogOpen(false);
       fetchSprints();
     } catch (error: any) {
       console.error("Error completing sprint:", error);
@@ -220,7 +262,7 @@ export default function SprintsSection() {
           <h2 className="text-2xl font-bold">Sprints</h2>
           <p className="text-muted-foreground">Gerencie sprints globais</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setCreateDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Sprint
         </Button>
@@ -230,7 +272,7 @@ export default function SprintsSection() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground mb-4">Nenhuma sprint criada ainda</p>
-            <Button onClick={() => setDialogOpen(true)}>
+            <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Criar Primeira Sprint
             </Button>
@@ -360,10 +402,20 @@ export default function SprintsSection() {
       )}
 
       <CreateSprintDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
         onSuccess={fetchSprints}
       />
+
+      {sprintToComplete && (
+        <RetrospectiveDialog
+          open={retrospectiveDialogOpen}
+          onOpenChange={setRetrospectiveDialogOpen}
+          sprintId={sprintToComplete.id}
+          retrospective={null}
+          onSuccess={handleRetrospectiveSuccess}
+        />
+      )}
     </div>
   );
 }

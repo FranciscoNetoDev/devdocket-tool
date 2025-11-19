@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List } from "lucide-react";
+import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List, UsersRound } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -36,6 +36,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
 import ManageMembersDialog from "@/components/project/ManageMembersDialog";
+import ProjectMemberAvatars from "@/components/project/ProjectMemberAvatars";
 
 interface Project {
   id: string;
@@ -43,6 +44,13 @@ interface Project {
   key: string;
   description: string | null;
   created_at: string;
+  project_members?: Array<{
+    user_id: string;
+    profiles?: {
+      full_name: string | null;
+      nickname: string | null;
+    };
+  }>;
 }
 
 export default function Dashboard() {
@@ -94,7 +102,10 @@ export default function Dashboard() {
         .from("projects")
         .select(`
           *,
-          project_members!inner(user_id)
+          project_members!inner(
+            user_id,
+            profiles(full_name, nickname)
+          )
         `)
         .eq("project_members.user_id", user?.id)
         .order("created_at", { ascending: false });
@@ -407,9 +418,17 @@ export default function Dashboard() {
                             <p className="text-sm text-muted-foreground line-clamp-1 mb-1">
                               {project.description || "Sem descrição"}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              Criado em {new Date(project.created_at).toLocaleDateString("pt-BR")}
-                            </p>
+                            <div className="flex items-center gap-3">
+                              <p className="text-xs text-muted-foreground">
+                                Criado em {new Date(project.created_at).toLocaleDateString("pt-BR")}
+                              </p>
+                              {project.project_members && project.project_members.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <UsersRound className="h-3 w-3 text-muted-foreground" />
+                                  <ProjectMemberAvatars members={project.project_members} maxDisplay={3} />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <DropdownMenu>

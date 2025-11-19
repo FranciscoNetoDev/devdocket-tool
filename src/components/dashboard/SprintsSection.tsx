@@ -198,10 +198,14 @@ export default function SprintsSection() {
           {sprints.map((sprint) => {
             const daysRemaining = differenceInDays(new Date(sprint.end_date), new Date());
             return (
-              <Card key={sprint.id} className="hover:shadow-md transition-shadow cursor-pointer group">
+              <Card 
+                key={sprint.id} 
+                className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer group"
+                onClick={() => setSelectedSprint(sprint)}
+              >
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg" onClick={() => setSelectedSprint(sprint)}>
+                    <CardTitle className="text-lg group-hover:text-primary transition-colors">
                       {sprint.name}
                     </CardTitle>
                     <div className="flex items-center gap-2">
@@ -271,13 +275,13 @@ export default function SprintsSection() {
                     </div>
                   </div>
                   {sprint.goal && (
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground" onClick={() => setSelectedSprint(sprint)}>
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground mt-2">
                       <Target className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <p>{sprint.goal}</p>
+                      <p className="line-clamp-2">{sprint.goal}</p>
                     </div>
                   )}
                 </CardHeader>
-                <CardContent onClick={() => setSelectedSprint(sprint)}>
+                <CardContent>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
@@ -287,7 +291,7 @@ export default function SprintsSection() {
                       </span>
                     </div>
                     {sprint.status === "active" && (
-                      <p className={`text-sm font-medium ${daysRemaining < 0 ? "text-red-500" : daysRemaining <= 3 ? "text-yellow-500" : "text-green-500"}`}>
+                      <p className={`text-sm font-medium ${daysRemaining < 0 ? "text-destructive" : daysRemaining <= 3 ? "text-yellow-500" : "text-green-600"}`}>
                         {daysRemaining < 0
                           ? `Atrasada (${Math.abs(daysRemaining)} dias)`
                           : daysRemaining === 0

@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List, UsersRound, Link2, Calendar } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List, UsersRound, Link2, Calendar, Target, ListTodo } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInDays, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -40,6 +41,8 @@ import EditProjectDialog from "@/components/project/EditProjectDialog";
 import ManageMembersDialog from "@/components/project/ManageMembersDialog";
 import ProjectMemberAvatars from "@/components/project/ProjectMemberAvatars";
 import ProjectInviteDialog from "@/components/project/ProjectInviteDialog";
+import SprintsSection from "@/components/dashboard/SprintsSection";
+import GlobalBacklog from "@/components/dashboard/GlobalBacklog";
 
 interface Project {
   id: string;
@@ -298,19 +301,36 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">Meus Projetos</h2>
-              <p className="text-muted-foreground">
-                Gerencie e acompanhe todos os seus projetos em um só lugar
-              </p>
-            </div>
-            <Button onClick={() => navigate("/projects/new")} size="lg">
-              <Plus className="mr-2 h-5 w-5" />
-              Novo Projeto
-            </Button>
-          </div>
+        <Tabs defaultValue="projects" className="w-full">
+          <TabsList className="mb-6">
+            <TabsTrigger value="projects">
+              <FolderKanban className="mr-2 h-4 w-4" />
+              Projetos
+            </TabsTrigger>
+            <TabsTrigger value="sprints">
+              <Target className="mr-2 h-4 w-4" />
+              Sprints
+            </TabsTrigger>
+            <TabsTrigger value="backlog">
+              <ListTodo className="mr-2 h-4 w-4" />
+              Backlog Geral
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="projects">
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold mb-2">Meus Projetos</h2>
+                  <p className="text-muted-foreground">
+                    Gerencie e acompanhe todos os seus projetos em um só lugar
+                  </p>
+                </div>
+                <Button onClick={() => navigate("/projects/new")} size="lg">
+                  <Plus className="mr-2 h-5 w-5" />
+                  Novo Projeto
+                </Button>
+              </div>
 
           {/* Search and Filter Section */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -586,7 +606,17 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-      </main>
+      </TabsContent>
+
+      <TabsContent value="sprints">
+        <SprintsSection />
+      </TabsContent>
+
+      <TabsContent value="backlog">
+        <GlobalBacklog />
+      </TabsContent>
+    </Tabs>
+  </main>
 
       {editingProject && (
         <EditProjectDialog

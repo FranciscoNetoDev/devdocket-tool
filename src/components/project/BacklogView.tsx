@@ -96,7 +96,7 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
         <div>
           <h2 className="text-2xl font-bold">Backlog</h2>
           <p className="text-muted-foreground">
-            {tasks.length} {tasks.length === 1 ? "task" : "tasks"} no backlog
+            {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"} no backlog
           </p>
         </div>
         <Button>

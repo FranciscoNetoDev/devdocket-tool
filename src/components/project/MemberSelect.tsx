@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,7 @@ export default function MemberSelect({
   onMembersChange,
   disabled = false,
 }: MemberSelectProps) {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,11 +98,22 @@ export default function MemberSelect({
     }
   };
 
+  /**
+   * Retorna o nome do membro para exibição
+   * Se for o usuário logado, mostra "Me vincular"
+   */
+  const getMemberDisplayName = (member: Member) => {
+    if (member.user_id === user?.id) {
+      return "Me vincular";
+    }
+    return member?.profiles?.nickname || member?.profiles?.full_name || member?.profiles?.email || "Membro";
+  };
+
   const getSelectedMembersDisplay = () => {
     if (selectedMembers.length === 0) return "Selecionar membros";
     if (selectedMembers.length === 1) {
       const member = members.find(m => m.user_id === selectedMembers[0]);
-      return member?.profiles?.nickname || member?.profiles?.full_name || member?.profiles?.email || "Membro";
+      return member ? getMemberDisplayName(member) : "Membro";
     }
     return `${selectedMembers.length} membros selecionados`;
   };
@@ -139,7 +152,7 @@ export default function MemberSelect({
                         : "opacity-0"
                     )}
                   />
-                  {member.profiles?.nickname || member.profiles?.full_name || member.profiles?.email || "Membro"}
+                  {getMemberDisplayName(member)}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -158,7 +171,7 @@ export default function MemberSelect({
                 className="cursor-pointer"
                 onClick={() => !disabled && toggleMember(userId)}
               >
-                {member?.profiles?.nickname || member?.profiles?.full_name || member?.profiles?.email || "Membro"}
+                {member ? getMemberDisplayName(member) : "Membro"}
                 {!disabled && " ×"}
               </Badge>
             );

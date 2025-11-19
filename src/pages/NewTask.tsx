@@ -27,19 +27,30 @@ export default function NewTask() {
   const [dueDate, setDueDate] = useState("");
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
 
+  /**
+   * Submete o formulário de criação de task
+   * Fluxo:
+   * 1. Validação dos campos obrigatórios (título, projeto, usuário)
+   * 2. Criação da task no banco via Supabase
+   * 3. Atribuição de membros à task (se houver)
+   * 4. Redirecionamento para a página do projeto
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validação: título obrigatório
     if (!title.trim()) {
       toast.error("Por favor, preencha o título da task");
       return;
     }
 
+    // Validação: projeto deve estar identificado
     if (!projectId) {
       toast.error("Projeto não identificado. Tente voltar e acessar novamente.");
       return;
     }
 
+    // Validação: usuário deve estar autenticado
     if (!user || !user.id) {
       toast.error("Você precisa estar autenticado para criar tasks");
       return;
@@ -48,18 +59,19 @@ export default function NewTask() {
     try {
       setLoading(true);
       
-      // Create task
+      // Monta o payload da task com os dados do formulário
       const taskPayload = {
         title: title.trim(),
         description: description.trim() || null,
         priority,
         status,
         project_id: projectId,
-        created_by: user.id,
+        created_by: user.id, // Importante: define o criador como o usuário logado
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
         due_date: dueDate || null,
       };
       
+      // Cria a task no Supabase
       const { data: taskData, error: taskError } = await supabase
         .from("tasks")
         .insert([taskPayload])
@@ -69,7 +81,7 @@ export default function NewTask() {
       if (taskError) {
         console.error("Error creating task:", taskError);
         
-        // Mensagens de erro amigáveis baseadas no código
+        // Tratamento de erros com mensagens amigáveis
         if (taskError.code === "42501") {
           toast.error("Você não tem permissão para criar tasks neste projeto. Verifique se você é membro do projeto.");
         } else if (taskError.code === "23503") {
@@ -82,7 +94,7 @@ export default function NewTask() {
         return;
       }
 
-      // Add assignees if any
+      // Se houver membros selecionados, atribui eles à task
       if (assignedMembers.length > 0 && taskData) {
         const assignees = assignedMembers.map(userId => ({
           task_id: taskData.id,

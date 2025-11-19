@@ -66,7 +66,7 @@ export default function AcceptInvite() {
   const acceptInvite = async () => {
     if (!user) {
       toast.error("Você precisa estar logado para aceitar o convite");
-      navigate("/auth", { state: { returnTo: `/invite/${token}` } });
+      navigate("/auth", { state: { returnTo: `/i/${token}` } });
       return;
     }
 
@@ -205,7 +205,7 @@ export default function AcceptInvite() {
                 </p>
               </div>
               <Button 
-                onClick={() => navigate("/auth", { state: { returnTo: `/invite/${token}` } })} 
+                onClick={() => navigate("/auth", { state: { returnTo: `/i/${token}` } })} 
                 className="w-full h-11"
                 size="lg"
               >

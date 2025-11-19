@@ -31,7 +31,8 @@ const App = () => (
             <Route path="/projects/new" element={<NewProject />} />
             <Route path="/projects/:projectId" element={<Project />} />
             <Route path="/projects/:projectId/tasks/new" element={<NewTask />} />
-            <Route path="/invite/:token" element={<AcceptInvite />} />
+          <Route path="/invite/:token" element={<AcceptInvite />} />
+          <Route path="/i/:token" element={<AcceptInvite />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

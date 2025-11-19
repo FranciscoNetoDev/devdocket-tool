@@ -496,29 +496,35 @@ export default function TaskDialog({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="sprint">Sprint</Label>
                 <Select 
                   value={sprintId || "backlog"} 
                   onValueChange={(val) => setSprintId(val === "backlog" ? null : val)} 
-                  disabled={saving}
+                  disabled={saving || !!userStoryId}
                 >
                   <SelectTrigger id="sprint">
-                    <SelectValue placeholder="Selecione uma sprint" />
+                    <SelectValue placeholder="Herda da User Story" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="backlog">Backlog (Sem Sprint)</SelectItem>
-                  {sprints.map((sprint) => (
-                    <SelectItem key={sprint.id} value={sprint.id}>
-                      {sprint.name} ({sprint.status === "active" ? "Ativa" : sprint.status === "paused" ? "Pausada" : "Planejamento"})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    {sprints.map((sprint) => (
+                      <SelectItem key={sprint.id} value={sprint.id}>
+                        {sprint.name} ({sprint.status === "active" ? "Ativa" : sprint.status === "paused" ? "Pausada" : "Planejamento"})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {userStoryId && (
+                  <p className="text-xs text-muted-foreground">
+                    Sprint herdada da User Story
+                  </p>
+                )}
+              </div>
 
             <div className="space-y-2">
-              <Label htmlFor="userStory">User Story</Label>
+              <Label htmlFor="userStory">User Story *</Label>
               <Select 
                 value={userStoryId || "none"} 
                 onValueChange={(val) => setUserStoryId(val === "none" ? null : val)} 
@@ -528,14 +534,22 @@ export default function TaskDialog({
                   <SelectValue placeholder="Selecione uma user story" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                  {userStories.map((story) => (
-                    <SelectItem key={story.id} value={story.id}>
-                      {story.title}
-                    </SelectItem>
-                  ))}
+                  {userStories.length === 0 ? (
+                    <SelectItem value="none" disabled>Nenhuma user story disponível</SelectItem>
+                  ) : (
+                    <>
+                      {userStories.map((story) => (
+                        <SelectItem key={story.id} value={story.id}>
+                          {story.title}
+                        </SelectItem>
+                      ))}
+                    </>
+                  )}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Toda task deve ser vinculada a uma User Story
+              </p>
             </div>
           </div>
 

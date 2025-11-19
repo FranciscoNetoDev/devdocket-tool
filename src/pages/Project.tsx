@@ -13,6 +13,7 @@ import SprintsView from "@/components/project/SprintsView";
 import TeamView from "@/components/project/TeamView";
 import UserStoryView from "@/components/project/UserStoryView";
 import RetrospectiveView from "@/components/project/RetrospectiveView";
+import ProjectIcon from "@/components/project/ProjectIcon";
 
 interface Project {
   id: string;
@@ -80,9 +81,7 @@ export default function Project() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <span className="text-sm font-bold text-primary">{project.key}</span>
-                </div>
+                <ProjectIcon projectKey={project.key} size="sm" />
                 <div>
                   <h1 className="text-xl font-bold">{project.name}</h1>
                   <div className="text-xs text-muted-foreground space-y-1">

@@ -43,6 +43,7 @@ import ProjectMemberAvatars from "@/components/project/ProjectMemberAvatars";
 import ProjectInviteDialog from "@/components/project/ProjectInviteDialog";
 import SprintsSection from "@/components/dashboard/SprintsSection";
 import GlobalBacklog from "@/components/dashboard/GlobalBacklog";
+import ProjectIcon from "@/components/project/ProjectIcon";
 
 interface Project {
   id: string;
@@ -426,11 +427,11 @@ export default function Dashboard() {
                           className="flex items-center gap-3 flex-1 cursor-pointer"
                           onClick={() => navigate(`/projects/${project.id}`)}
                         >
-                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                            <span className="text-lg font-bold text-primary">
-                              {project.key}
-                            </span>
-                          </div>
+                          <ProjectIcon 
+                            projectKey={project.key} 
+                            size="md"
+                            className="group-hover:bg-primary/20"
+                          />
                           <div>
                             <CardTitle className="text-lg">{project.name}</CardTitle>
                             <CardDescription className="text-xs space-y-1">
@@ -525,11 +526,11 @@ export default function Dashboard() {
                           className="flex items-center gap-4 flex-1 cursor-pointer"
                           onClick={() => navigate(`/projects/${project.id}`)}
                         >
-                          <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors shrink-0">
-                            <span className="text-xl font-bold text-primary">
-                              {project.key}
-                            </span>
-                          </div>
+                          <ProjectIcon 
+                            projectKey={project.key} 
+                            size="lg"
+                            className="group-hover:bg-primary/20"
+                          />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="font-semibold text-lg truncate">{project.name}</h3>

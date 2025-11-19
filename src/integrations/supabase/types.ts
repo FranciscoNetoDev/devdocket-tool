@@ -856,6 +856,10 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_assigned_to_sprint_task: {
+        Args: { _sprint_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_project_admin: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean

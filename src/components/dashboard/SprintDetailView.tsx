@@ -26,6 +26,7 @@ interface Task {
   status: string;
   priority: string;
   project_id: string;
+  user_story_id: string;
   projects: {
     name: string;
     key: string;
@@ -64,24 +65,6 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
     try {
       setLoading(true);
 
-      // Fetch tasks in this sprint
-      const { data: tasksData, error: tasksError } = await supabase
-        .from("tasks")
-        .select(`
-          id,
-          title,
-          status,
-          priority,
-          project_id,
-          projects:project_id (name, key)
-        `)
-        .eq("sprint_id", sprint.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
-
-      if (tasksError) throw tasksError;
-      setTasks(tasksData || []);
-
       // Fetch user stories in this sprint via junction table
       const { data: sprintStories, error: storiesError } = await supabase
         .from("sprint_user_stories")
@@ -103,6 +86,31 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
       
       const storiesData = sprintStories?.map(s => s.user_stories).filter(Boolean) || [];
       setUserStories(storiesData as any);
+
+      // Fetch all tasks for these user stories
+      if (storiesData.length > 0) {
+        const storyIds = storiesData.map(s => s.id);
+        
+        const { data: tasksData, error: tasksError } = await supabase
+          .from("tasks")
+          .select(`
+            id,
+            title,
+            status,
+            priority,
+            user_story_id,
+            project_id,
+            projects:project_id (name, key)
+          `)
+          .in("user_story_id", storyIds)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
+
+        if (tasksError) throw tasksError;
+        setTasks(tasksData || []);
+      } else {
+        setTasks([]);
+      }
 
     } catch (error: any) {
       console.error("Error fetching sprint data:", error);
@@ -305,36 +313,72 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-4">
-              {userStories.map((story) => (
-                <Card key={story.id} className="border-l-4 border-l-blue-400">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-base">{story.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {story.projects?.key} • {story.projects?.name}
-                        </p>
+            <div className="space-y-4">
+              {userStories.map((story) => {
+                const storyTasks = tasks.filter(task => task.user_story_id === story.id);
+                
+                return (
+                  <Card key={story.id} className="border-l-4 border-l-blue-400">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-base">{story.title}</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {story.projects?.key} • {story.projects?.name}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          {story.story_points && (
+                            <Badge variant="outline" className="font-bold">{story.story_points} pts</Badge>
+                          )}
+                          <Badge className={statusColors[story.status]}>
+                            {story.status === 'draft' ? 'Rascunho' : 
+                             story.status === 'ready' ? 'Pronta' : 
+                             story.status === 'in_progress' ? 'Em Progresso' : 'Concluída'}
+                          </Badge>
+                          <Badge className={priorityColors[story.priority]}>
+                            {story.priority === 'low' ? 'Baixa' : 
+                             story.priority === 'medium' ? 'Média' : 
+                             story.priority === 'high' ? 'Alta' : 'Crítica'}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        {story.story_points && (
-                          <Badge variant="outline" className="font-bold">{story.story_points} pts</Badge>
-                        )}
-                        <Badge className={statusColors[story.status]}>
-                          {story.status === 'draft' ? 'Rascunho' : 
-                           story.status === 'ready' ? 'Pronta' : 
-                           story.status === 'in_progress' ? 'Em Progresso' : 'Concluída'}
-                        </Badge>
-                        <Badge className={priorityColors[story.priority]}>
-                          {story.priority === 'low' ? 'Baixa' : 
-                           story.priority === 'medium' ? 'Média' : 
-                           story.priority === 'high' ? 'Alta' : 'Crítica'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
+                    </CardHeader>
+                    
+                    {storyTasks.length > 0 && (
+                      <CardContent>
+                        <div className="space-y-2">
+                          <div className="text-sm font-medium text-muted-foreground mb-2">
+                            Tasks ({storyTasks.length})
+                          </div>
+                          {storyTasks.map((task) => (
+                            <div
+                              key={task.id}
+                              className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{task.title}</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <Badge className={statusColors[task.status]} variant="secondary">
+                                  {task.status === 'todo' ? 'A Fazer' : 
+                                   task.status === 'in_progress' ? 'Em Progresso' : 
+                                   task.status === 'done' ? 'Concluído' : 'Bloqueado'}
+                                </Badge>
+                                <Badge className={priorityColors[task.priority]} variant="secondary">
+                                  {task.priority === 'low' ? 'Baixa' : 
+                                   task.priority === 'medium' ? 'Média' : 
+                                   task.priority === 'high' ? 'Alta' : 'Crítica'}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    )}
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>

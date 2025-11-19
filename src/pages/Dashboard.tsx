@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc } from "lucide-react";
+import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
 import ManageMembersDialog from "@/components/project/ManageMembersDialog";
 
@@ -55,6 +56,7 @@ export default function Dashboard() {
   const [deleting, setDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "date" | "key">("date");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -240,17 +242,37 @@ export default function Dashboard() {
                 className="pl-10"
               />
             </div>
-            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SortAsc className="mr-2 h-4 w-4" />
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date">Data de criação</SelectItem>
-                <SelectItem value="name">Nome (A-Z)</SelectItem>
-                <SelectItem value="key">Chave (A-Z)</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SortAsc className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Ordenar por" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Data de criação</SelectItem>
+                  <SelectItem value="name">Nome (A-Z)</SelectItem>
+                  <SelectItem value="key">Chave (A-Z)</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex border rounded-lg overflow-hidden">
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="icon"
+                  onClick={() => setViewMode("grid")}
+                  className="rounded-none"
+                >
+                  <Grid3x3 className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="icon"
+                  onClick={() => setViewMode("list")}
+                  className="rounded-none"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
 
           {loading ? (
@@ -287,76 +309,151 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div className={viewMode === "grid" 
+              ? "grid gap-6 md:grid-cols-2 lg:grid-cols-3 animate-fade-in" 
+              : "flex flex-col gap-4 animate-fade-in"
+            }>
               {filteredAndSortedProjects.map((project) => (
-                <Card
-                  key={project.id}
-                  className="hover:shadow-medium transition-all group"
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div
-                        className="flex items-center gap-3 flex-1 cursor-pointer"
-                        onClick={() => navigate(`/projects/${project.id}`)}
-                      >
-                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                          <span className="text-lg font-bold text-primary">
-                            {project.key}
-                          </span>
+                viewMode === "grid" ? (
+                  <Card
+                    key={project.id}
+                    className="hover:shadow-medium transition-all group"
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div
+                          className="flex items-center gap-3 flex-1 cursor-pointer"
+                          onClick={() => navigate(`/projects/${project.id}`)}
+                        >
+                          <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                            <span className="text-lg font-bold text-primary">
+                              {project.key}
+                            </span>
+                          </div>
+                          <div>
+                            <CardTitle className="text-lg">{project.name}</CardTitle>
+                            <CardDescription className="text-xs">
+                              Criado em {new Date(project.created_at).toLocaleDateString("pt-BR")}
+                            </CardDescription>
+                          </div>
                         </div>
-                        <div>
-                          <CardTitle className="text-lg">{project.name}</CardTitle>
-                          <CardDescription className="text-xs">
-                            Criado em {new Date(project.created_at).toLocaleDateString("pt-BR")}
-                          </CardDescription>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProject(project);
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar Projeto
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setManagingMembersProject(project.id);
+                              }}
+                            >
+                              <Users className="mr-2 h-4 w-4" />
+                              Gerenciar Membros
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProjectToDelete(project);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Deletar Projeto
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingProject(project);
-                            }}
-                          >
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar Projeto
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setManagingMembersProject(project.id);
-                            }}
-                          >
-                            <Users className="mr-2 h-4 w-4" />
-                            Gerenciar Membros
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setProjectToDelete(project);
-                            }}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Deletar Projeto
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {project.description || "Sem descrição"}
-                    </p>
-                  </CardContent>
-                </Card>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {project.description || "Sem descrição"}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card
+                    key={project.id}
+                    className="hover:shadow-medium transition-all group"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div
+                          className="flex items-center gap-4 flex-1 cursor-pointer"
+                          onClick={() => navigate(`/projects/${project.id}`)}
+                        >
+                          <div className="w-14 h-14 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors shrink-0">
+                            <span className="text-xl font-bold text-primary">
+                              {project.key}
+                            </span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-lg truncate">{project.name}</h3>
+                              <Badge variant="outline" className="shrink-0">{project.key}</Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-1 mb-1">
+                              {project.description || "Sem descrição"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Criado em {new Date(project.created_at).toLocaleDateString("pt-BR")}
+                            </p>
+                          </div>
+                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingProject(project);
+                              }}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Editar Projeto
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setManagingMembersProject(project.id);
+                              }}
+                            >
+                              <Users className="mr-2 h-4 w-4" />
+                              Gerenciar Membros
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setProjectToDelete(project);
+                              }}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Deletar Projeto
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
               ))}
             </div>
           )}

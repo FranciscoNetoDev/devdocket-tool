@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import NewProject from "./pages/NewProject";
 import Project from "./pages/Project";
+import NewTask from "./pages/NewTask";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projects/new" element={<NewProject />} />
             <Route path="/projects/:projectId" element={<Project />} />
+            <Route path="/projects/:projectId/tasks/new" element={<NewTask />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

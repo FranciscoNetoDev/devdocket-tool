@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Loader2, Plus, Clock, AlertCircle, GripVertical } from "lucide-react";
 import { toast } from "sonner";
+import TaskDialog from "./TaskDialog";
 
 interface Task {
   id: string;
@@ -51,6 +52,8 @@ const statusLabels = {
 export default function BacklogView({ projectId, projectKey }: BacklogViewProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -80,6 +83,11 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTaskClick = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setDialogOpen(true);
   };
 
   if (loading) {
@@ -123,6 +131,7 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
             <Card
               key={task.id}
               className="hover:shadow-md transition-all cursor-pointer"
+              onClick={() => handleTaskClick(task.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-4">
@@ -199,6 +208,14 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
           ))}
         </div>
       )}
+
+      <TaskDialog
+        taskId={selectedTaskId}
+        projectKey={projectKey}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onTaskUpdated={fetchTasks}
+      />
     </div>
   );
 }

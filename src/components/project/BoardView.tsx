@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Loader2, Clock, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import TaskDialog from "./TaskDialog";
 
 interface Task {
   id: string;
@@ -44,6 +45,8 @@ const priorityColors = {
 export default function BoardView({ projectId, projectKey }: BoardViewProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchTasks();
@@ -100,6 +103,11 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
     return tasks.filter(task => task.status === status);
   };
 
+  const handleTaskClick = (taskId: string) => {
+    setSelectedTaskId(taskId);
+    setDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -127,6 +135,7 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
                 <Card
                   key={task.id}
                   className="cursor-pointer hover:shadow-md transition-all"
+                  onClick={() => handleTaskClick(task.id)}
                 >
                   <CardHeader className="p-4 pb-3">
                     <div className="flex items-start justify-between gap-2 mb-2">
@@ -190,6 +199,14 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
           </div>
         );
       })}
+
+      <TaskDialog
+        taskId={selectedTaskId}
+        projectKey={projectKey}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onTaskUpdated={fetchTasks}
+      />
     </div>
   );
 }

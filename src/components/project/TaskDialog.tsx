@@ -75,7 +75,12 @@ export default function TaskDialog({
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
   const [savingAssignees, setSavingAssignees] = useState(false);
   const [userStoryId, setUserStoryId] = useState<string | null>(null);
-  const [userStories, setUserStories] = useState<Array<{ id: string; title: string }>>([]);
+  const [userStories, setUserStories] = useState<Array<{ id: string; title: string; story_points: number | null }>>([]);
+  const [storyPointsInfo, setStoryPointsInfo] = useState<{
+    total: number;
+    consumed: number;
+    available: number;
+  } | null>(null);
 
   useEffect(() => {
     if (taskId && open) {
@@ -94,7 +99,7 @@ export default function TaskDialog({
     try {
       const { data, error } = await supabase
         .from("user_stories")
-        .select("id, title")
+        .select("id, title, story_points")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
@@ -104,6 +109,54 @@ export default function TaskDialog({
       console.error("Error fetching user stories:", error);
     }
   };
+
+  const calculateStoryPoints = async (storyId: string, excludeTaskId?: string) => {
+    try {
+      // Buscar a user story
+      const { data: story, error: storyError } = await supabase
+        .from("user_stories")
+        .select("story_points")
+        .eq("id", storyId)
+        .single();
+
+      if (storyError) throw storyError;
+
+      const totalPoints = story.story_points || 0;
+
+      // Buscar todas as tasks da user story
+      const { data: tasks, error: tasksError } = await supabase
+        .from("tasks")
+        .select("id, estimated_hours")
+        .eq("user_story_id", storyId)
+        .is("deleted_at", null);
+
+      if (tasksError) throw tasksError;
+
+      // Calcular pontos consumidos (excluindo a task atual se estiver editando)
+      const consumedPoints = (tasks || [])
+        .filter(t => t.id !== excludeTaskId)
+        .reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+
+      const availablePoints = totalPoints - consumedPoints;
+
+      setStoryPointsInfo({
+        total: totalPoints,
+        consumed: consumedPoints,
+        available: availablePoints,
+      });
+    } catch (error: any) {
+      console.error("Error calculating story points:", error);
+      setStoryPointsInfo(null);
+    }
+  };
+
+  useEffect(() => {
+    if (userStoryId) {
+      calculateStoryPoints(userStoryId, taskId || undefined);
+    } else {
+      setStoryPointsInfo(null);
+    }
+  }, [userStoryId, taskId]);
 
   const fetchTask = async () => {
     if (!taskId) return;
@@ -148,8 +201,22 @@ export default function TaskDialog({
 
   const handleSave = async () => {
     if (!taskId || !title.trim()) {
-      toast.error("Título é obrigatório");
+      toast.error("Preencha o título");
       return;
+    }
+
+    if (!userStoryId) {
+      toast.error("Selecione uma user story");
+      return;
+    }
+
+    // Validar pontos disponíveis
+    if (storyPointsInfo && estimatedHours) {
+      const newHours = parseFloat(estimatedHours);
+      if (!isNaN(newHours) && newHours > storyPointsInfo.available) {
+        toast.error(`Esta user story só tem ${storyPointsInfo.available} pontos disponíveis. Você está tentando usar ${newHours} pontos.`);
+        return;
+      }
     }
 
     try {
@@ -453,11 +520,33 @@ export default function TaskDialog({
                   <SelectItem value="none">Selecione...</SelectItem>
                   {userStories.map((story) => (
                     <SelectItem key={story.id} value={story.id}>
-                      {story.title}
+                      {story.title} {story.story_points ? `(${story.story_points} pts)` : "(sem pontos)"}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {storyPointsInfo && (
+                <div className={`text-sm p-3 rounded-lg border ${
+                  storyPointsInfo.available < 0 
+                    ? "bg-destructive/10 border-destructive text-destructive" 
+                    : storyPointsInfo.available === 0
+                    ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+                    : "bg-green-50 border-green-200 text-green-800"
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">Pontos da User Story:</span>
+                    <span className="font-bold">{storyPointsInfo.total} pts total</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span>Já consumidos:</span>
+                    <span>{storyPointsInfo.consumed} pts</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1 font-semibold">
+                    <span>Disponíveis:</span>
+                    <span>{storyPointsInfo.available} pts</span>
+                  </div>
+                </div>
+              )}
               <p className="text-xs text-muted-foreground">
                 A task herda a vinculação à sprint através da user story
               </p>
@@ -465,16 +554,29 @@ export default function TaskDialog({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="estimatedHours">Horas Estimadas</Label>
+                <Label htmlFor="estimatedHours">Horas Estimadas (1h = 1 ponto)</Label>
                 <Input
                   id="estimatedHours"
                   type="number"
                   step="0.5"
                   min="0"
+                  max={storyPointsInfo?.available || undefined}
                   value={estimatedHours}
                   onChange={(e) => setEstimatedHours(e.target.value)}
                   disabled={saving}
                 />
+                {estimatedHours && storyPointsInfo && (
+                  <p className={`text-xs ${
+                    parseFloat(estimatedHours) > storyPointsInfo.available
+                      ? "text-destructive font-medium"
+                      : "text-muted-foreground"
+                  }`}>
+                    {parseFloat(estimatedHours) > storyPointsInfo.available
+                      ? `⚠️ Excede os pontos disponíveis (${storyPointsInfo.available} pts)`
+                      : `✓ Usará ${estimatedHours} dos ${storyPointsInfo.available} pontos disponíveis`
+                    }
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">

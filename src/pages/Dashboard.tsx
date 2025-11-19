@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, FolderKanban, LogOut, User } from "lucide-react";
+import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -14,7 +14,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import EditProjectDialog from "@/components/project/EditProjectDialog";
+import ManageMembersDialog from "@/components/project/ManageMembersDialog";
 
 interface Project {
   id: string;
@@ -29,6 +41,10 @@ export default function Dashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [managingMembersProject, setManagingMembersProject] = useState<string | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,6 +94,29 @@ export default function Dashboard() {
       console.error("Error fetching projects:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from("projects")
+        .delete()
+        .eq("id", projectToDelete.id);
+
+      if (error) throw error;
+
+      toast.success("Projeto deletado com sucesso!");
+      setProjectToDelete(null);
+      fetchProjects();
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      toast.error("Erro ao deletar projeto");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -182,12 +221,14 @@ export default function Dashboard() {
               {projects.map((project) => (
                 <Card
                   key={project.id}
-                  className="hover:shadow-medium transition-all cursor-pointer group"
-                  onClick={() => navigate(`/projects/${project.id}`)}
+                  className="hover:shadow-medium transition-all group"
                 >
                   <CardHeader>
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
+                      <div
+                        className="flex items-center gap-3 flex-1 cursor-pointer"
+                        onClick={() => navigate(`/projects/${project.id}`)}
+                      >
                         <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
                           <span className="text-lg font-bold text-primary">
                             {project.key}
@@ -200,6 +241,44 @@ export default function Dashboard() {
                           </CardDescription>
                         </div>
                       </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingProject(project);
+                            }}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            Editar Projeto
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setManagingMembersProject(project.id);
+                            }}
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            Gerenciar Membros
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setProjectToDelete(project);
+                            }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Deletar Projeto
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -213,6 +292,46 @@ export default function Dashboard() {
           )}
         </div>
       </main>
+
+      {editingProject && (
+        <EditProjectDialog
+          project={editingProject}
+          open={!!editingProject}
+          onOpenChange={(open) => !open && setEditingProject(null)}
+          onSuccess={fetchProjects}
+        />
+      )}
+
+      {managingMembersProject && (
+        <ManageMembersDialog
+          projectId={managingMembersProject}
+          open={!!managingMembersProject}
+          onOpenChange={(open) => !open && setManagingMembersProject(null)}
+        />
+      )}
+
+      <AlertDialog open={!!projectToDelete} onOpenChange={() => setProjectToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deletar Projeto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar o projeto "{projectToDelete?.name}"?
+              Esta ação não pode ser desfeita e todos os dados relacionados serão perdidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteProject}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Deletar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

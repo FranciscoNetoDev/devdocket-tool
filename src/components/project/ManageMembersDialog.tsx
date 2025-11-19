@@ -55,26 +55,41 @@ export default function ManageMembersDialog({
   const [addingMembers, setAddingMembers] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
-  const [isCreator, setIsCreator] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (open) {
       fetchMembers();
-      checkIfCreator();
+      checkIfAdmin();
     }
   }, [open, projectId]);
 
-  const checkIfCreator = async () => {
+  const checkIfAdmin = async () => {
     try {
-      const { data } = await supabase
+      // Check if user is creator
+      const { data: projectData } = await supabase
         .from("projects")
         .select("created_by")
         .eq("id", projectId)
         .single();
 
-      setIsCreator(data?.created_by === user?.id);
+      if (projectData?.created_by === user?.id) {
+        setIsAdmin(true);
+        return;
+      }
+
+      // Check if user has admin role in project_members
+      const { data: memberData } = await supabase
+        .from("project_members")
+        .select("role")
+        .eq("project_id", projectId)
+        .eq("user_id", user?.id)
+        .single();
+
+      setIsAdmin(memberData?.role === 'admin');
     } catch (error) {
-      console.error("Error checking creator:", error);
+      console.error("Error checking admin status:", error);
+      setIsAdmin(false);
     }
   };
 
@@ -208,7 +223,7 @@ export default function ManageMembersDialog({
           </DialogHeader>
 
           <div className="space-y-6">
-            {isCreator && (
+            {isAdmin && (
               <div className="space-y-4">
                 <h3 className="font-semibold">Adicionar Membros</h3>
                 <UserSelect
@@ -287,7 +302,7 @@ export default function ManageMembersDialog({
                             Membro
                           </Badge>
                         )}
-                        {isCreator && member.role !== "admin" && (
+                        {isAdmin && member.role !== "admin" && (
                           <Button
                             variant="ghost"
                             size="icon"

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import BoardView from "@/components/project/BoardView";
 import BacklogView from "@/components/project/BacklogView";
 import SprintsView from "@/components/project/SprintsView";
+import TeamView from "@/components/project/TeamView";
 
 interface Project {
   id: string;
@@ -99,6 +100,7 @@ export default function Project() {
             <TabsTrigger value="board">Board</TabsTrigger>
             <TabsTrigger value="backlog">Backlog</TabsTrigger>
             <TabsTrigger value="sprints">Sprints</TabsTrigger>
+            <TabsTrigger value="team">Equipe</TabsTrigger>
             <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
           </TabsList>
 
@@ -112,6 +114,10 @@ export default function Project() {
 
           <TabsContent value="sprints" className="mt-0">
             <SprintsView projectId={projectId!} />
+          </TabsContent>
+
+          <TabsContent value="team" className="mt-0">
+            <TeamView projectId={projectId!} />
           </TabsContent>
 
           <TabsContent value="roadmap" className="mt-0">

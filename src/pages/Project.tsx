@@ -10,6 +10,7 @@ import BoardView from "@/components/project/BoardView";
 import BacklogView from "@/components/project/BacklogView";
 import SprintsView from "@/components/project/SprintsView";
 import TeamView from "@/components/project/TeamView";
+import UserStoryView from "@/components/project/UserStoryView";
 
 interface Project {
   id: string;
@@ -101,7 +102,7 @@ export default function Project() {
             <TabsTrigger value="backlog">Backlog</TabsTrigger>
             <TabsTrigger value="sprints">Sprints</TabsTrigger>
             <TabsTrigger value="team">Equipe</TabsTrigger>
-            <TabsTrigger value="roadmap">Roadmap</TabsTrigger>
+            <TabsTrigger value="user-story">User Story</TabsTrigger>
           </TabsList>
 
           <TabsContent value="board" className="mt-0">
@@ -120,10 +121,8 @@ export default function Project() {
             <TeamView projectId={projectId!} />
           </TabsContent>
 
-          <TabsContent value="roadmap" className="mt-0">
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Roadmap em desenvolvimento...</p>
-            </div>
+          <TabsContent value="user-story" className="mt-0">
+            <UserStoryView projectId={projectId!} />
           </TabsContent>
         </Tabs>
       </main>

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface CreateSprintDialogProps {
   projectId: string;
@@ -28,6 +29,7 @@ export default function CreateSprintDialog({
   onOpenChange,
   onSuccess,
 }: CreateSprintDialogProps) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -51,8 +53,21 @@ export default function CreateSprintDialog({
 
     setLoading(true);
     try {
+      // Get user's org
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("org_id")
+        .eq("user_id", user?.id)
+        .maybeSingle();
+
+      if (!userRole?.org_id) {
+        toast.error("Organização não encontrada");
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.from("sprints").insert({
-        project_id: projectId,
+        org_id: userRole.org_id,
         name: formData.name,
         goal: formData.goal || null,
         start_date: formData.start_date,

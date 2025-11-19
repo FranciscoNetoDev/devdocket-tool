@@ -210,6 +210,21 @@ export default function NewTask() {
       }
     }
 
+    // Validar limite de 8 pontos por dia
+    if (dailyPointsInfo && estimatedHours && dueDate) {
+      const newHours = parseFloat(estimatedHours);
+      if (!isNaN(newHours)) {
+        if (dailyPointsInfo.daysNeeded === 1 && dailyPointsInfo.currentDayPoints + newHours > 8) {
+          toast.error(`Limite de 8pts/dia excedido! Dia ${new Date(dueDate).toLocaleDateString('pt-BR')} já tem ${dailyPointsInfo.currentDayPoints}pts alocados. Você pode alocar no máximo ${8 - dailyPointsInfo.currentDayPoints}pts neste dia.`);
+          return;
+        }
+        if (dailyPointsInfo.daysNeeded > 1) {
+          toast.error(`Esta task de ${newHours}pts não cabe no dia ${new Date(dueDate).toLocaleDateString('pt-BR')} (já tem ${dailyPointsInfo.currentDayPoints}pts). Escolha uma data com mais disponibilidade ou reduza as horas estimadas.`);
+          return;
+        }
+      }
+    }
+
     // Validação: projeto deve estar identificado
     if (!projectId) {
       toast.error("Projeto não identificado. Tente voltar e acessar novamente.");
@@ -499,25 +514,33 @@ Hint: ${taskError.hint || 'N/A'}
                     disabled={loading}
                   />
                   {dailyPointsInfo && dailyPointsInfo.daysNeeded > 1 && (
-                    <div className="text-sm p-3 rounded-lg border bg-blue-50 border-blue-200 text-blue-800">
-                      <p className="font-medium mb-2">⚠️ Distribuição necessária ({dailyPointsInfo.daysNeeded} dias)</p>
+                    <div className="text-sm p-3 rounded-lg border bg-destructive/10 border-destructive text-destructive">
+                      <p className="font-medium mb-2">🚫 Task não cabe no dia selecionado!</p>
                       <p className="text-xs mb-2">
-                        Limite: 8pts/dia. Esta task precisa ser distribuída:
+                        Esta task de {estimatedHours}pts precisa de {dailyPointsInfo.daysNeeded} dias (limite: 8pts/dia).
+                        Dia {dueDate && new Date(dueDate).toLocaleDateString('pt-BR')} já tem {dailyPointsInfo.currentDayPoints}pts alocados.
                       </p>
-                      <div className="space-y-1">
-                        {dailyPointsInfo.distribution.map((day, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs">
-                            <span>{new Date(day.date).toLocaleDateString('pt-BR')}</span>
-                            <span className="font-semibold">{day.points}pts</span>
-                          </div>
-                        ))}
-                      </div>
+                      <p className="text-xs font-medium">
+                        Escolha outra data ou reduza as horas estimadas.
+                      </p>
                     </div>
                   )}
-                  {dailyPointsInfo && dailyPointsInfo.currentDayPoints > 0 && dailyPointsInfo.daysNeeded === 1 && (
+                  {dailyPointsInfo && dailyPointsInfo.currentDayPoints > 0 && dailyPointsInfo.daysNeeded === 1 && 
+                    estimatedHours && parseFloat(estimatedHours) + dailyPointsInfo.currentDayPoints <= 8 && (
                     <p className="text-xs text-muted-foreground">
-                      📊 Já alocados neste dia: {dailyPointsInfo.currentDayPoints}pts de 8pts
+                      ✓ Disponível: {8 - dailyPointsInfo.currentDayPoints - parseFloat(estimatedHours)}pts restantes neste dia
                     </p>
+                  )}
+                  {dailyPointsInfo && estimatedHours && dueDate && 
+                    dailyPointsInfo.currentDayPoints + parseFloat(estimatedHours) > 8 && 
+                    dailyPointsInfo.daysNeeded === 1 && (
+                    <div className="text-sm p-3 rounded-lg border bg-destructive/10 border-destructive text-destructive">
+                      <p className="font-medium">🚫 Limite de 8pts/dia excedido!</p>
+                      <p className="text-xs mt-1">
+                        Dia {new Date(dueDate).toLocaleDateString('pt-BR')} já tem {dailyPointsInfo.currentDayPoints}pts alocados.
+                        Máximo permitido: {8 - dailyPointsInfo.currentDayPoints}pts
+                      </p>
+                    </div>
                   )}
                 </div>
               </div>
@@ -607,7 +630,10 @@ Hint: ${taskError.hint || 'N/A'}
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={loading || !userStoryId || userStories.length === 0}
+                  disabled={loading || !userStoryId || userStories.length === 0 || (dailyPointsInfo !== null && (
+                    (dailyPointsInfo.daysNeeded === 1 && estimatedHours && dailyPointsInfo.currentDayPoints + parseFloat(estimatedHours) > 8) ||
+                    dailyPointsInfo.daysNeeded > 1
+                  ))}
                 >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Criar Task

@@ -42,11 +42,16 @@ export default function Auth() {
           setLoading(false);
           return;
         }
+        if (password.length < 6) {
+          toast.error("A senha deve ter pelo menos 6 caracteres");
+          setLoading(false);
+          return;
+        }
         const { error } = await signUp(email, password, name);
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success("Conta criada com sucesso!");
+          toast.success("Conta criada com sucesso! Você já pode fazer login.");
           navigate("/dashboard");
         }
       }

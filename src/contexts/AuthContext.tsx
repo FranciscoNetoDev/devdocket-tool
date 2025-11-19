@@ -41,27 +41,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          name,
+          full_name: name,
         },
       },
     });
+    
+    if (error) return { error };
+    
+    // Check if user was created (email might already be registered)
+    if (!data.user) {
+      return { error: { message: "Este email já está registrado" } as any };
+    }
     
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    return { error };
+    if (error) {
+      // Provide more user-friendly error messages
+      if (error.message.includes("Invalid login credentials")) {
+        return { error: { ...error, message: "Email ou senha incorretos" } };
+      }
+      return { error };
+    }
+    
+    // Verify user exists
+    if (!data.user) {
+      return { error: { message: "Usuário não encontrado" } as any };
+    }
+    
+    return { error: null };
   };
 
   const signOut = async () => {

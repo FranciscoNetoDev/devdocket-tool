@@ -48,21 +48,46 @@ export default function NewTask() {
     try {
       setLoading(true);
       
+      console.log("=== DEBUG: Criando task ===");
+      console.log("User ID:", user?.id);
+      console.log("Project ID:", projectId);
+      
+      // Verificar se é membro antes de tentar criar
+      const { data: memberCheck } = await supabase
+        .from("project_members")
+        .select("id, role")
+        .eq("project_id", projectId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      console.log("Verificação de membro:", memberCheck);
+      
+      if (!memberCheck) {
+        toast.error("Você não é membro deste projeto. Entre em contato com o administrador para solicitar acesso.");
+        return;
+      }
+      
       // Create task
+      const taskPayload = {
+        title: title.trim(),
+        description: description.trim() || null,
+        priority,
+        status,
+        project_id: projectId,
+        created_by: user.id,
+        estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
+        due_date: dueDate || null,
+      };
+      
+      console.log("Payload da task:", taskPayload);
+      
       const { data: taskData, error: taskError } = await supabase
         .from("tasks")
-        .insert([{
-          title: title.trim(),
-          description: description.trim() || null,
-          priority,
-          status,
-          project_id: projectId,
-          created_by: user.id,
-          estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
-          due_date: dueDate || null,
-        }])
+        .insert([taskPayload])
         .select()
         .single();
+      
+      console.log("Resultado:", { taskData, taskError });
 
       if (taskError) {
         console.error("Error creating task:", taskError);

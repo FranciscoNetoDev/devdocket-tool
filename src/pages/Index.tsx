@@ -90,7 +90,7 @@ const Index = () => {
         <div className="max-w-4xl mx-auto">
           <Card className="border-border shadow-medium">
             <CardContent className="p-8">
-              <h2 className="text-2xl font-bold mb-6">Por que escolher TaskFlow?</h2>
+              <h2 className="text-2xl font-bold mb-6">Por que escolher Taskbora?</h2>
               <div className="space-y-4">
                 {[
                   "Gestão completa de projetos e tarefas",
@@ -121,7 +121,7 @@ const Index = () => {
                 Crie sua conta gratuitamente e comece a gerenciar seus projetos hoje mesmo.
               </p>
               <Button size="lg" variant="secondary" onClick={() => navigate("/auth")} className="text-lg px-8">
-                Criar Conta Grátis
+                Criar Conta / Login
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </CardContent>
@@ -137,10 +137,10 @@ const Index = () => {
               <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
                 <Rocket className="w-4 h-4 text-white" />
               </div>
-              <span className="font-semibold">TaskFlow</span>
+              <span className="font-semibold">Taskbora</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2024 TaskFlow. Todos os direitos reservados.
+              © 2024 Taskbora. Todos os direitos reservados.
             </p>
           </div>
         </div>

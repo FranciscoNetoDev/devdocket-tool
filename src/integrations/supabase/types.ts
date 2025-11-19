@@ -132,6 +132,50 @@ export type Database = {
         }
         Relationships: []
       }
+      project_invites: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          expires_at: string
+          id: string
+          max_uses: number | null
+          project_id: string
+          role: string | null
+          token: string
+          use_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          expires_at: string
+          id?: string
+          max_uses?: number | null
+          project_id: string
+          role?: string | null
+          token: string
+          use_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          expires_at?: string
+          id?: string
+          max_uses?: number | null
+          project_id?: string
+          role?: string | null
+          token?: string
+          use_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_invites_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           created_at: string

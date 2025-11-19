@@ -161,6 +161,10 @@ All colors MUST be HSL.
     --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
     --shadow-medium: 0 4px 16px -4px hsl(0 0% 0% / 0.4);
     --shadow-large: 0 8px 32px -8px hsl(0 0% 0% / 0.5);
+    #lovable-badge {
+        display: none !important;
+      }
+
   }
 }
 

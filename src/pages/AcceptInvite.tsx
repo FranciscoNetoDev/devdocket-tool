@@ -131,16 +131,16 @@ export default function AcceptInvite() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-destructive mb-2">
-              <XCircle className="h-6 w-6" />
-              <CardTitle>Convite Inválido</CardTitle>
+        <Card className="max-w-lg w-full shadow-lg border-border/50">
+          <CardHeader className="text-center pb-4">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+              <XCircle className="h-8 w-8 text-destructive" />
             </div>
-            <CardDescription>{error}</CardDescription>
+            <CardTitle className="text-2xl">Convite Inválido</CardTitle>
+            <CardDescription className="text-base">{error}</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate("/dashboard")} className="w-full">
+            <Button onClick={() => navigate("/dashboard")} className="w-full h-11" size="lg">
               Ir para Dashboard
             </Button>
           </CardContent>
@@ -152,13 +152,13 @@ export default function AcceptInvite() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-primary mb-2">
-              <CheckCircle2 className="h-6 w-6" />
-              <CardTitle>Convite Aceito!</CardTitle>
+        <Card className="max-w-lg w-full shadow-lg border-border/50">
+          <CardHeader className="text-center pb-6">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center animate-pulse">
+              <CheckCircle2 className="h-8 w-8 text-primary" />
             </div>
-            <CardDescription>
+            <CardTitle className="text-2xl">Convite Aceito!</CardTitle>
+            <CardDescription className="text-base">
               Você agora é membro do projeto. Redirecionando...
             </CardDescription>
           </CardHeader>
@@ -169,37 +169,45 @@ export default function AcceptInvite() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-subtle p-4">
-      <Card className="max-w-md w-full">
-        <CardHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <UserPlus className="h-6 w-6 text-primary" />
-            <CardTitle>Convite para Projeto</CardTitle>
+      <Card className="max-w-lg w-full shadow-lg border-border/50">
+        <CardHeader className="text-center pb-4">
+          <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <UserPlus className="h-8 w-8 text-primary" />
           </div>
-          <CardDescription>
-            Você foi convidado para participar do projeto
+          <CardTitle className="text-2xl">Convite para Projeto</CardTitle>
+          <CardDescription className="text-base">
+            Você foi convidado para colaborar em um projeto
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 bg-muted rounded-lg">
-            <h3 className="font-semibold text-lg mb-1">{project?.name}</h3>
-            {project?.description && (
-              <p className="text-sm text-muted-foreground">{project.description}</p>
-            )}
-            <div className="mt-3 flex gap-2">
-              <span className="text-xs px-2 py-1 bg-background rounded border">
-                Papel: {invite.role}
-              </span>
+        <CardContent className="space-y-6">
+          <div className="relative overflow-hidden rounded-xl border border-border/50 bg-gradient-to-br from-primary/5 via-background to-background p-6">
+            <div className="relative z-10">
+              <h3 className="font-bold text-xl mb-2">{project?.name}</h3>
+              {project?.description && (
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
+                  {project.description}
+                </p>
+              )}
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-background/80 backdrop-blur-sm rounded-lg border border-border/50">
+                  <span className="text-xs font-medium text-muted-foreground">Papel:</span>
+                  <span className="text-sm font-semibold capitalize">{invite.role}</span>
+                </div>
+              </div>
             </div>
           </div>
 
           {!user ? (
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                Você precisa estar logado para aceitar este convite
-              </p>
+            <div className="space-y-4 text-center">
+              <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+                <p className="text-sm text-foreground">
+                  Você precisa estar logado para aceitar este convite
+                </p>
+              </div>
               <Button 
                 onClick={() => navigate("/auth", { state: { returnTo: `/invite/${token}` } })} 
-                className="w-full"
+                className="w-full h-11"
+                size="lg"
               >
                 Fazer Login
               </Button>
@@ -208,16 +216,17 @@ export default function AcceptInvite() {
             <Button 
               onClick={acceptInvite} 
               disabled={accepting}
-              className="w-full"
+              className="w-full h-11"
+              size="lg"
             >
               {accepting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Aceitando...
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Aceitando convite...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  <CheckCircle2 className="mr-2 h-5 w-5" />
                   Aceitar Convite
                 </>
               )}

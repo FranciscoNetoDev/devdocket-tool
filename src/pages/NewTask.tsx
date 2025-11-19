@@ -30,17 +30,24 @@ export default function NewTask() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log("=== DEBUG INICIAL ===");
+    console.log("User:", user);
+    console.log("User ID:", user?.id);
+    console.log("Project ID:", projectId);
+    
     if (!title.trim()) {
       toast.error("Por favor, preencha o título da task");
       return;
     }
 
     if (!projectId) {
+      console.error("ProjectId está undefined!");
       toast.error("Projeto não identificado. Tente voltar e acessar novamente.");
       return;
     }
 
-    if (!user) {
+    if (!user || !user.id) {
+      console.error("User ou User.id está undefined!", { user });
       toast.error("Você precisa estar autenticado para criar tasks");
       return;
     }
@@ -49,18 +56,22 @@ export default function NewTask() {
       setLoading(true);
       
       console.log("=== DEBUG: Criando task ===");
-      console.log("User ID:", user?.id);
+      console.log("User ID:", user.id);
       console.log("Project ID:", projectId);
       
       // Verificar se é membro antes de tentar criar
-      const { data: memberCheck } = await supabase
+      const { data: memberCheck, error: memberError } = await supabase
         .from("project_members")
         .select("id, role")
         .eq("project_id", projectId)
         .eq("user_id", user.id)
         .maybeSingle();
       
-      console.log("Verificação de membro:", memberCheck);
+      console.log("Verificação de membro:", { memberCheck, memberError });
+      
+      if (memberError) {
+        console.error("Erro ao verificar membro:", memberError);
+      }
       
       if (!memberCheck) {
         toast.error("Você não é membro deste projeto. Entre em contato com o administrador para solicitar acesso.");

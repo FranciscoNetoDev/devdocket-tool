@@ -5,6 +5,14 @@ import { format, eachDayOfInterval, isWeekend } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "lucide-react";
 
+interface Task {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  due_date: string | null;
+}
+
 interface UserStory {
   id: string;
   title: string;
@@ -17,6 +25,7 @@ interface SprintCalendarViewProps {
   startDate: string;
   endDate: string;
   userStories: UserStory[];
+  tasks: Task[];
 }
 
 const DAILY_CAPACITY = 8;
@@ -25,12 +34,27 @@ export default function SprintCalendarView({
   startDate,
   endDate,
   userStories,
+  tasks,
 }: SprintCalendarViewProps) {
   const days = useMemo(() => {
     const start = new Date(startDate);
     const end = new Date(endDate);
     return eachDayOfInterval({ start, end });
   }, [startDate, endDate]);
+
+  const tasksByDate = useMemo(() => {
+    const grouped: Record<string, Task[]> = {};
+    tasks.forEach((task) => {
+      if (task.due_date) {
+        const dateKey = format(new Date(task.due_date), "yyyy-MM-dd");
+        if (!grouped[dateKey]) {
+          grouped[dateKey] = [];
+        }
+        grouped[dateKey].push(task);
+      }
+    });
+    return grouped;
+  }, [tasks]);
 
   const totalPoints = userStories.reduce(
     (sum, story) => sum + (story.story_points || 0),
@@ -51,6 +75,13 @@ export default function SprintCalendarView({
     medium: "bg-yellow-500",
     high: "bg-orange-500",
     critical: "bg-red-500",
+  };
+
+  const statusColors: Record<string, string> = {
+    todo: "bg-slate-500",
+    in_progress: "bg-blue-500",
+    done: "bg-green-500",
+    blocked: "bg-red-500",
   };
 
   return (
@@ -74,41 +105,41 @@ export default function SprintCalendarView({
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Capacidade Total
+              User Stories
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{userStories.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {totalPoints} pontos
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Tasks Totais
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{tasks.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {tasks.filter(t => t.due_date).length} com data
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Capacidade
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{workDays.length * DAILY_CAPACITY}</div>
             <p className="text-xs text-muted-foreground">
               {DAILY_CAPACITY} pts/dia útil
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pontos Alocados
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalPoints}</div>
-            <p className="text-xs text-muted-foreground">
-              {userStories.length} user stories
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Média Diária
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{avgPointsPerDay.toFixed(1)}</div>
-            <p className="text-xs text-muted-foreground">
-              pts/dia útil
             </p>
           </CardContent>
         </Card>
@@ -145,13 +176,15 @@ export default function SprintCalendarView({
               const utilization = getDayUtilization(index);
               const isOverCapacity = utilization > DAILY_CAPACITY;
               const utilizationPercent = (utilization / DAILY_CAPACITY) * 100;
+              const dateKey = format(day, "yyyy-MM-dd");
+              const dayTasks = tasksByDate[dateKey] || [];
 
               return (
                 <Card
                   key={day.toISOString()}
                   className={`${
                     isWeekendDay ? "bg-muted/50" : ""
-                  } ${isOverCapacity ? "border-destructive" : ""}`}
+                  } ${isOverCapacity ? "border-destructive" : ""} ${dayTasks.length > 0 ? "min-h-[120px]" : ""}`}
                 >
                   <CardContent className="p-3 space-y-2">
                     <div className="flex justify-between items-start">
@@ -189,6 +222,25 @@ export default function SprintCalendarView({
                         <div className="text-xs text-center text-muted-foreground">
                           {utilizationPercent.toFixed(0)}%
                         </div>
+                      </div>
+                    )}
+
+                    {/* Tasks do dia */}
+                    {dayTasks.length > 0 && (
+                      <div className="space-y-1 mt-2">
+                        {dayTasks.map((task) => (
+                          <div
+                            key={task.id}
+                            className="text-xs p-1.5 rounded border bg-background/80 hover:bg-background transition-colors"
+                          >
+                            <div className="flex items-center gap-1">
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusColors[task.status]}`}
+                              />
+                              <span className="truncate flex-1">{task.title}</span>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </CardContent>

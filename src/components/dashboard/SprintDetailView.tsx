@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, FileText, Plus, Calendar, CalendarDays } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, FileText, Plus, Calendar, CalendarDays, Clock, User } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -28,10 +28,19 @@ interface Task {
   project_id: string;
   user_story_id: string;
   due_date: string | null;
+  estimated_hours: number | null;
+  actual_hours: number | null;
   projects: {
     name: string;
     key: string;
   };
+  task_assignees: Array<{
+    user_id: string;
+    profiles: {
+      full_name: string | null;
+      nickname: string | null;
+    } | null;
+  }>;
 }
 
 interface UserStory {
@@ -50,9 +59,12 @@ interface UserStory {
 interface SprintDetailViewProps {
   sprint: Sprint;
   onBack: () => void;
+  onNavigate?: (direction: 'prev' | 'next') => void;
+  hasNext?: boolean;
+  hasPrev?: boolean;
 }
 
-export default function SprintDetailView({ sprint, onBack }: SprintDetailViewProps) {
+export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext = false, hasPrev = false }: SprintDetailViewProps) {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [userStories, setUserStories] = useState<UserStory[]>([]);
@@ -102,6 +114,8 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
           user_story_id,
           project_id,
           due_date,
+          estimated_hours,
+          actual_hours,
           projects:project_id (name, key)
         `)
         .in("user_story_id", storyIds)
@@ -110,11 +124,32 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
         .order("created_at", { ascending: false });
 
         if (tasksError) throw tasksError;
-        setTasks(tasksData || []);
+        
+        // Fetch assignees for all tasks
+        const tasksWithAssignees = await Promise.all(
+          (tasksData || []).map(async (task: any) => {
+            const { data: assignees } = await supabase
+              .from("task_assignees")
+              .select(`
+                user_id,
+                profiles:user_id (
+                  full_name,
+                  nickname
+                )
+              `)
+              .eq("task_id", task.id);
+            
+            return {
+              ...task,
+              task_assignees: assignees || []
+            };
+          })
+        );
+        
+        setTasks(tasksWithAssignees);
       } else {
         setTasks([]);
       }
-
     } catch (error: any) {
       console.error("Error fetching sprint data:", error);
       toast.error("Erro ao carregar dados da sprint");
@@ -168,9 +203,31 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          {onNavigate && (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onNavigate('prev')}
+                disabled={!hasPrev}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onNavigate('next')}
+                disabled={!hasNext}
+              >
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+        </div>
         <div className="flex-1">
           <h2 className="text-2xl font-bold">{sprint.name}</h2>
           {sprint.goal && (
@@ -315,22 +372,50 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
                           {storyTasks.map((task) => (
                             <div
                               key={task.id}
-                              className="flex items-center justify-between p-3 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                              className="flex flex-col gap-2 p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                             >
-                              <div className="flex-1">
-                                <p className="text-sm font-medium">{task.title}</p>
-                              </div>
-                              <div className="flex gap-2">
-                                <Badge className={statusColors[task.status]} variant="secondary">
-                                  {task.status === 'todo' ? 'A Fazer' : 
-                                   task.status === 'in_progress' ? 'Em Progresso' : 
-                                   task.status === 'done' ? 'Concluído' : 'Bloqueado'}
-                                </Badge>
-                                <Badge className={priorityColors[task.priority]} variant="secondary">
-                                  {task.priority === 'low' ? 'Baixa' : 
-                                   task.priority === 'medium' ? 'Média' : 
-                                   task.priority === 'high' ? 'Alta' : 'Crítica'}
-                                </Badge>
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium mb-1">{task.title}</p>
+                                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                    {task.estimated_hours && (
+                                      <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        <span>Est: {task.estimated_hours}h</span>
+                                      </div>
+                                    )}
+                                    {task.actual_hours && (
+                                      <div className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        <span>Real: {task.actual_hours}h</span>
+                                      </div>
+                                    )}
+                                    {task.due_date && (
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="h-3 w-3" />
+                                        <span>{format(new Date(task.due_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                                      </div>
+                                    )}
+                                    {task.task_assignees && task.task_assignees.length > 0 && (
+                                      <div className="flex items-center gap-1">
+                                        <User className="h-3 w-3" />
+                                        <span>{task.task_assignees.map(a => a.profiles?.nickname || a.profiles?.full_name || "Sem nome").join(", ")}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <Badge className={statusColors[task.status]} variant="secondary">
+                                    {task.status === 'todo' ? 'A Fazer' : 
+                                     task.status === 'in_progress' ? 'Em Progresso' : 
+                                     task.status === 'done' ? 'Concluído' : 'Bloqueado'}
+                                  </Badge>
+                                  <Badge className={priorityColors[task.priority]} variant="secondary">
+                                    {task.priority === 'low' ? 'Baixa' : 
+                                     task.priority === 'medium' ? 'Média' : 
+                                     task.priority === 'high' ? 'Alta' : 'Crítica'}
+                                  </Badge>
+                                </div>
                               </div>
                             </div>
                           ))}

@@ -98,20 +98,63 @@ export default function Dashboard() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
+      
+      // Busca os projetos do usuário
+      const { data: projectsData, error: projectsError } = await supabase
         .from("projects")
         .select(`
           *,
-          project_members!inner(
-            user_id,
-            profiles(full_name, nickname)
-          )
+          project_members!inner(user_id)
         `)
         .eq("project_members.user_id", user?.id)
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setProjects(data || []);
+      if (projectsError) throw projectsError;
+
+      // Para cada projeto, busca os membros completos com perfis
+      const projectsWithMembers = await Promise.all(
+        (projectsData || []).map(async (project) => {
+          const { data: members, error: membersError } = await supabase
+            .from("project_members")
+            .select("user_id")
+            .eq("project_id", project.id);
+
+          if (membersError) {
+            console.error("Error fetching members:", membersError);
+            return { ...project, project_members: [] };
+          }
+
+          // Busca os perfis dos membros
+          const memberIds = members.map(m => m.user_id);
+          
+          if (memberIds.length === 0) {
+            return { ...project, project_members: [] };
+          }
+
+          const { data: profiles, error: profilesError } = await supabase
+            .from("profiles")
+            .select("id, full_name, nickname")
+            .in("id", memberIds);
+
+          if (profilesError) {
+            console.error("Error fetching profiles:", profilesError);
+            return { ...project, project_members: [] };
+          }
+
+          // Combina os dados
+          const membersWithProfiles = members.map(member => ({
+            user_id: member.user_id,
+            profiles: profiles?.find(p => p.id === member.user_id)
+          }));
+
+          return {
+            ...project,
+            project_members: membersWithProfiles
+          };
+        })
+      );
+
+      setProjects(projectsWithMembers);
     } catch (error: any) {
       toast.error("Erro ao carregar projetos");
       console.error("Error fetching projects:", error);

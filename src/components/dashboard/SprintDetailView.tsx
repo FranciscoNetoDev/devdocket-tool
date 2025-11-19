@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, CheckSquare, FileText, Plus, Calendar } from "lucide-react";
+import { ArrowLeft, Loader2, CheckSquare, FileText, Plus, Calendar, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ManageSprintStoriesDialog from "./ManageSprintStoriesDialog";
+import SprintCalendarView from "./SprintCalendarView";
 
 interface Sprint {
   id: string;
@@ -228,17 +229,29 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="tasks">
+      <Tabs defaultValue="calendar">
         <TabsList>
-          <TabsTrigger value="tasks">
-            <CheckSquare className="mr-2 h-4 w-4" />
-            Tasks ({tasks.length})
+          <TabsTrigger value="calendar">
+            <CalendarDays className="mr-2 h-4 w-4" />
+            Calendário
           </TabsTrigger>
           <TabsTrigger value="stories">
             <FileText className="mr-2 h-4 w-4" />
             User Stories ({userStories.length})
           </TabsTrigger>
+          <TabsTrigger value="tasks">
+            <CheckSquare className="mr-2 h-4 w-4" />
+            Tasks ({tasks.length})
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="calendar" className="space-y-4">
+          <SprintCalendarView
+            startDate={sprint.start_date}
+            endDate={sprint.end_date}
+            userStories={userStories}
+          />
+        </TabsContent>
 
         <TabsContent value="tasks" className="space-y-4">
           {tasks.length === 0 ? (

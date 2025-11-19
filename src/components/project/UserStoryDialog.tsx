@@ -83,6 +83,19 @@ export default function UserStoryDialog({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (open) {
+      setFormData({
+        title: story?.title || "",
+        description: story?.description || "",
+        acceptance_criteria: story?.acceptance_criteria || "",
+        story_points: story?.story_points?.toString() || "",
+        priority: story?.priority || "medium",
+        status: story?.status || "draft",
+      });
+    }
+  }, [story, open]);
+
+  useEffect(() => {
     if (story?.id) {
       fetchRelatedData();
     }

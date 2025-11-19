@@ -50,12 +50,31 @@ export default function ProjectInviteDialog({
   const [expiryDays, setExpiryDays] = useState("7");
   const [maxUses, setMaxUses] = useState("");
   const [role, setRole] = useState("member");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (open) {
       fetchInvites();
+      checkIfAdmin();
     }
   }, [open, projectId]);
+
+  const checkIfAdmin = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase.rpc('is_project_admin', {
+        _user_id: user.id,
+        _project_id: projectId
+      });
+      
+      if (error) throw error;
+      setIsAdmin(data || false);
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+      setIsAdmin(false);
+    }
+  };
 
   // Listen for new members accepting invites
   useEffect(() => {
@@ -188,72 +207,74 @@ export default function ProjectInviteDialog({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Create New Invite */}
-        <div className="space-y-3 sm:space-y-4 p-4 sm:p-5 border rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+        {/* Create New Invite - Only for admins */}
+        {isAdmin && (
+          <div className="space-y-3 sm:space-y-4 p-4 sm:p-5 border rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
+              </div>
+              <h3 className="font-semibold text-sm sm:text-base">Criar Novo Convite</h3>
             </div>
-            <h3 className="font-semibold text-sm sm:text-base">Criar Novo Convite</h3>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="expiry" className="text-xs sm:text-sm font-medium">Expira em</Label>
+                <Select value={expiryDays} onValueChange={setExpiryDays}>
+                  <SelectTrigger id="expiry" className="h-9 sm:h-10 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 dia</SelectItem>
+                    <SelectItem value="7">7 dias</SelectItem>
+                    <SelectItem value="30">30 dias</SelectItem>
+                    <SelectItem value="365">1 ano</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="max-uses" className="text-xs sm:text-sm font-medium">Usos máximos</Label>
+                <Input
+                  id="max-uses"
+                  type="number"
+                  placeholder="Ilimitado"
+                  value={maxUses}
+                  onChange={(e) => setMaxUses(e.target.value)}
+                  min="1"
+                  className="h-9 sm:h-10 text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="role" className="text-xs sm:text-sm font-medium">Papel</Label>
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger id="role" className="h-9 sm:h-10 text-sm">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="member">Membro</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Button onClick={createInvite} disabled={creating} className="w-full h-9 sm:h-10 text-sm sm:text-base">
+              {creating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Criando...
+                </>
+              ) : (
+                <>
+                  <LinkIcon className="mr-2 h-4 w-4" />
+                  Gerar Link de Convite
+                </>
+              )}
+            </Button>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="expiry" className="text-xs sm:text-sm font-medium">Expira em</Label>
-              <Select value={expiryDays} onValueChange={setExpiryDays}>
-                <SelectTrigger id="expiry" className="h-9 sm:h-10 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 dia</SelectItem>
-                  <SelectItem value="7">7 dias</SelectItem>
-                  <SelectItem value="30">30 dias</SelectItem>
-                  <SelectItem value="365">1 ano</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="max-uses" className="text-xs sm:text-sm font-medium">Usos máximos</Label>
-              <Input
-                id="max-uses"
-                type="number"
-                placeholder="Ilimitado"
-                value={maxUses}
-                onChange={(e) => setMaxUses(e.target.value)}
-                min="1"
-                className="h-9 sm:h-10 text-sm"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role" className="text-xs sm:text-sm font-medium">Papel</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger id="role" className="h-9 sm:h-10 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="member">Membro</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Button onClick={createInvite} disabled={creating} className="w-full h-9 sm:h-10 text-sm sm:text-base">
-            {creating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Criando...
-              </>
-            ) : (
-              <>
-                <LinkIcon className="mr-2 h-4 w-4" />
-                Gerar Link de Convite
-              </>
-            )}
-          </Button>
-        </div>
+        )}
 
         {/* Active Invites */}
         <div className="space-y-3 sm:space-y-4">

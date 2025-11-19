@@ -9,11 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
+import UserSelect from "@/components/project/UserSelect";
 
 export default function NewProject() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     key: "",
@@ -111,6 +113,24 @@ export default function NewProject() {
         throw projectError;
       }
 
+      // Adiciona membros ao projeto (além do criador que já é adicionado automaticamente)
+      if (selectedMembers.length > 0) {
+        const memberInserts = selectedMembers.map(userId => ({
+          project_id: project.id,
+          user_id: userId,
+          role: 'member'
+        }));
+
+        const { error: membersError } = await supabase
+          .from("project_members")
+          .insert(memberInserts);
+
+        if (membersError) {
+          console.error("Error adding members:", membersError);
+          toast.error("Projeto criado, mas houve erro ao adicionar membros");
+        }
+      }
+
       toast.success("Projeto criado com sucesso!");
       navigate(`/projects/${project.id}`);
     } catch (error: any) {
@@ -206,6 +226,20 @@ export default function NewProject() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Opcional: adicione mais contexto sobre o projeto
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="members">Membros da Equipe</Label>
+                <UserSelect
+                  selectedUsers={selectedMembers}
+                  onUsersChange={setSelectedMembers}
+                  disabled={loading}
+                  excludeCurrentUser={true}
+                  currentUserId={user?.id}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Selecione os membros que farão parte deste projeto
                 </p>
               </div>
 

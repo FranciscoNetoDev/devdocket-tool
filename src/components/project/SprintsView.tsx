@@ -55,14 +55,9 @@ export default function SprintsView({ projectId }: SprintsViewProps) {
   const fetchSprints = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("sprints")
-        .select("*")
-        .eq("project_id", projectId)
-        .order("start_date", { ascending: false });
-
-      if (error) throw error;
-      setSprints(data || []);
+      // Sprints agora são globais, não por projeto
+      // Este componente não deve mais mostrar sprints
+      setSprints([]);
     } catch (error: any) {
       console.error("Error fetching sprints:", error);
       toast.error("Erro ao carregar sprints");
@@ -92,99 +87,23 @@ export default function SprintsView({ projectId }: SprintsViewProps) {
   };
 
   const handleStartSprint = async (sprint: Sprint) => {
-    try {
-      // Verificar se já existe sprint ativa
-      const { data: activeSprints, error: checkError } = await supabase
-        .from("sprints")
-        .select("id, name")
-        .eq("project_id", projectId)
-        .eq("status", "active");
-
-      if (checkError) throw checkError;
-
-      if (activeSprints && activeSprints.length > 0) {
-        toast.error(`Já existe uma sprint ativa: "${activeSprints[0].name}". Complete ou pause ela antes de iniciar outra.`);
-        return;
-      }
-
-      const { error } = await supabase
-        .from("sprints")
-        .update({ status: "active" })
-        .eq("id", sprint.id);
-
-      if (error) throw error;
-
-      toast.success("Sprint iniciada!");
-      fetchSprints();
-    } catch (error: any) {
-      console.error("Error starting sprint:", error);
-      toast.error("Erro ao iniciar sprint");
-    }
+    // Sprints agora são globais, esta ação deve ser feita no dashboard
+    toast.info("Gerencie sprints no Dashboard");
   };
 
   const handlePauseSprint = async (sprint: Sprint) => {
-    try {
-      const { error } = await supabase
-        .from("sprints")
-        .update({ status: "paused" })
-        .eq("id", sprint.id);
-
-      if (error) throw error;
-
-      toast.success("Sprint pausada!");
-      fetchSprints();
-    } catch (error: any) {
-      console.error("Error pausing sprint:", error);
-      toast.error("Erro ao pausar sprint");
-    }
+    // Sprints agora são globais, esta ação deve ser feita no dashboard
+    toast.info("Gerencie sprints no Dashboard");
   };
 
   const handleResumeSprint = async (sprint: Sprint) => {
-    try {
-      // Verificar se já existe sprint ativa
-      const { data: activeSprints, error: checkError } = await supabase
-        .from("sprints")
-        .select("id, name")
-        .eq("project_id", projectId)
-        .eq("status", "active");
-
-      if (checkError) throw checkError;
-
-      if (activeSprints && activeSprints.length > 0) {
-        toast.error(`Já existe uma sprint ativa: "${activeSprints[0].name}". Complete ou pause ela antes de retomar outra.`);
-        return;
-      }
-
-      const { error } = await supabase
-        .from("sprints")
-        .update({ status: "active" })
-        .eq("id", sprint.id);
-
-      if (error) throw error;
-
-      toast.success("Sprint retomada!");
-      fetchSprints();
-    } catch (error: any) {
-      console.error("Error resuming sprint:", error);
-      toast.error("Erro ao retomar sprint");
-    }
+    // Sprints agora são globais, esta ação deve ser feita no dashboard
+    toast.info("Gerencie sprints no Dashboard");
   };
 
   const handleCompleteSprint = async (sprint: Sprint) => {
-    try {
-      const { error } = await supabase
-        .from("sprints")
-        .update({ status: "completed" })
-        .eq("id", sprint.id);
-
-      if (error) throw error;
-
-      toast.success("Sprint concluída!");
-      fetchSprints();
-    } catch (error: any) {
-      console.error("Error completing sprint:", error);
-      toast.error("Erro ao concluir sprint");
-    }
+    // Sprints agora são globais, esta ação deve ser feita no dashboard
+    toast.info("Gerencie sprints no Dashboard");
   };
 
   const getStatusColor = (status: string) => {

@@ -100,33 +100,12 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
     try {
       setLoading(true);
       
-      // Buscar sprints ativas do projeto que estão dentro do período
-      const today = new Date().toISOString().split('T')[0];
-      const { data: activeSprints, error: sprintError } = await supabase
-        .from("sprints")
-        .select("id")
-        .eq("project_id", projectId)
-        .eq("status", "active")
-        .lte("start_date", today)
-        .gte("end_date", today);
-
-      if (sprintError) throw sprintError;
-
-      // Se não houver sprint ativa no período, não mostra tasks
-      if (!activeSprints || activeSprints.length === 0) {
-        setTasks([]);
-        setLoading(false);
-        return;
-      }
-
-      const sprintIds = activeSprints.map(s => s.id);
-
-      // Buscar tasks das sprints ativas
+      // Buscar tasks ativas do projeto sem sprint
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
         .eq("project_id", projectId)
-        .in("sprint_id", sprintIds)
+        .is("sprint_id", null)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 

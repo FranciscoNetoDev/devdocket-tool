@@ -100,10 +100,19 @@ export default function TaskDialog({
 
   const fetchSprintsForProject = async (projectId: string) => {
     try {
+      // Sprints agora são globais, busca todas as sprints da org
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("org_id")
+        .eq("user_id", user?.id)
+        .maybeSingle();
+
+      if (!userRole?.org_id) return;
+
       const { data, error } = await supabase
         .from("sprints")
         .select("id, name, status")
-        .eq("project_id", projectId)
+        .eq("org_id", userRole.org_id)
         .in("status", ["planning", "active", "paused"])
         .order("start_date", { ascending: false });
 

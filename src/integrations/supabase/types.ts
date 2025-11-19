@@ -338,6 +338,42 @@ export type Database = {
           },
         ]
       }
+      sprint_projects: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          sprint_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          sprint_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          sprint_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprint_projects_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sprint_projects_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sprint_user_stories: {
         Row: {
           created_at: string
@@ -381,7 +417,7 @@ export type Database = {
           goal: string | null
           id: string
           name: string
-          project_id: string
+          org_id: string | null
           start_date: string
           status: string
           updated_at: string
@@ -392,7 +428,7 @@ export type Database = {
           goal?: string | null
           id?: string
           name: string
-          project_id: string
+          org_id?: string | null
           start_date: string
           status?: string
           updated_at?: string
@@ -403,17 +439,17 @@ export type Database = {
           goal?: string | null
           id?: string
           name?: string
-          project_id?: string
+          org_id?: string | null
           start_date?: string
           status?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "sprints_project_id_fkey"
-            columns: ["project_id"]
+            foreignKeyName: "sprints_org_id_fkey"
+            columns: ["org_id"]
             isOneToOne: false
-            referencedRelation: "projects"
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

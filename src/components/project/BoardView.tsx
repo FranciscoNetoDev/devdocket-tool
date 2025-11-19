@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   DndContext,
@@ -11,7 +12,8 @@ import {
   closestCorners,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import TaskDialog from "./TaskDialog";
 import DroppableColumn from "./DroppableColumn";
@@ -53,6 +55,7 @@ const priorityColors = {
 };
 
 export default function BoardView({ projectId, projectKey }: BoardViewProps) {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -211,42 +214,57 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statusColumns.map((column) => {
-          const columnTasks = getTasksByStatus(column.id);
-          
-          return (
-            <DroppableColumn
-              key={column.id}
-              id={column.id}
-              label={column.label}
-              color={column.color}
-              tasks={columnTasks}
-              onTaskClick={handleTaskClick}
-            />
-          );
-        })}
-      </div>
-
-      {/* Overlay visual durante o drag */}
-      <DragOverlay dropAnimation={null}>
-        {activeTask ? (
-          <div className="rotate-6 scale-110 opacity-80 animate-pulse">
-            <DraggableTaskCard
-              task={activeTask}
-              onClick={() => {}}
-            />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Board</h2>
+            <p className="text-muted-foreground">
+              {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"}
+            </p>
           </div>
-        ) : null}
-      </DragOverlay>
+          <Button onClick={() => navigate(`/projects/${projectId}/tasks/new`)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Task
+          </Button>
+        </div>
 
-      <TaskDialog
-        taskId={selectedTaskId}
-        projectKey={projectKey}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onTaskUpdated={fetchTasks}
-      />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statusColumns.map((column) => {
+            const columnTasks = getTasksByStatus(column.id);
+            
+            return (
+              <DroppableColumn
+                key={column.id}
+                id={column.id}
+                label={column.label}
+                color={column.color}
+                tasks={columnTasks}
+                onTaskClick={handleTaskClick}
+              />
+            );
+          })}
+        </div>
+
+        {/* Overlay visual durante o drag */}
+        <DragOverlay dropAnimation={null}>
+          {activeTask ? (
+            <div className="rotate-6 scale-110 opacity-80 animate-pulse">
+              <DraggableTaskCard
+                task={activeTask}
+                onClick={() => {}}
+              />
+            </div>
+          ) : null}
+        </DragOverlay>
+
+        <TaskDialog
+          taskId={selectedTaskId}
+          projectKey={projectKey}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          onTaskUpdated={fetchTasks}
+        />
+      </div>
     </DndContext>
   );
 }

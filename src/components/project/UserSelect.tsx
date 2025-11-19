@@ -30,6 +30,7 @@ interface UserSelectProps {
   disabled?: boolean;
   excludeCurrentUser?: boolean;
   currentUserId?: string;
+  excludeUsers?: string[];
 }
 
 export default function UserSelect({
@@ -38,6 +39,7 @@ export default function UserSelect({
   disabled = false,
   excludeCurrentUser = false,
   currentUserId,
+  excludeUsers = [],
 }: UserSelectProps) {
   const [open, setOpen] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -58,10 +60,13 @@ export default function UserSelect({
 
       if (error) throw error;
 
-      // Filter out current user if needed
+      // Filter out current user and excluded users if needed
       let filteredUsers = profiles || [];
       if (excludeCurrentUser && currentUserId) {
         filteredUsers = filteredUsers.filter(u => u.id !== currentUserId);
+      }
+      if (excludeUsers.length > 0) {
+        filteredUsers = filteredUsers.filter(u => !excludeUsers.includes(u.id));
       }
 
       setUsers(filteredUsers);

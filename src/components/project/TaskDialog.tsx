@@ -71,12 +71,38 @@ export default function TaskDialog({
   const [actualHours, setActualHours] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
+  const [sprintId, setSprintId] = useState<string | null>(null);
+  const [sprints, setSprints] = useState<Array<{ id: string; name: string; status: string }>>([]);
 
   useEffect(() => {
     if (taskId && open) {
       fetchTask();
     }
+    if (open) {
+      fetchSprints();
+    }
   }, [taskId, open]);
+
+  const fetchSprints = async () => {
+    // Esta função será chamada pelo useEffect mas não faz nada
+    // As sprints são buscadas por fetchSprintsForProject após carregar a task
+  };
+
+  const fetchSprintsForProject = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("sprints")
+        .select("id, name, status")
+        .eq("project_id", projectId)
+        .in("status", ["planning", "active", "paused"])
+        .order("start_date", { ascending: false });
+
+      if (error) throw error;
+      setSprints(data || []);
+    } catch (error: any) {
+      console.error("Error fetching sprints:", error);
+    }
+  };
 
   const fetchTask = async () => {
     if (!taskId) return;
@@ -99,6 +125,10 @@ export default function TaskDialog({
       setEstimatedHours(data.estimated_hours?.toString() || "");
       setActualHours(data.actual_hours?.toString() || "");
       setDueDate(data.due_date || "");
+      setSprintId(data.sprint_id || null);
+      
+      // Buscar sprints após carregar a task
+      fetchSprintsForProject(data.project_id);
     } catch (error: any) {
       console.error("Error fetching task:", error);
       toast.error("Erro ao carregar task");
@@ -126,6 +156,7 @@ export default function TaskDialog({
           estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
           actual_hours: actualHours ? parseFloat(actualHours) : null,
           due_date: dueDate || null,
+          sprint_id: sprintId,
         })
         .eq("id", taskId);
 
@@ -284,6 +315,27 @@ export default function TaskDialog({
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sprint">Sprint</Label>
+              <Select 
+                value={sprintId || "backlog"} 
+                onValueChange={(val) => setSprintId(val === "backlog" ? null : val)} 
+                disabled={saving}
+              >
+                <SelectTrigger id="sprint">
+                  <SelectValue placeholder="Selecione uma sprint" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="backlog">Backlog (Sem Sprint)</SelectItem>
+                  {sprints.map((sprint) => (
+                    <SelectItem key={sprint.id} value={sprint.id}>
+                      {sprint.name} ({sprint.status === "active" ? "Ativa" : sprint.status === "paused" ? "Pausada" : "Planejamento"})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

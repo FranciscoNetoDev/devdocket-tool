@@ -1,4 +1,10 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Member {
   user_id: string;
@@ -28,29 +34,48 @@ export default function ProjectMemberAvatars({ members, maxDisplay = 3 }: Projec
     return name.slice(0, 2).toUpperCase();
   };
 
+  const getDisplayName = (member: Member) => {
+    return member.profiles?.full_name || member.profiles?.nickname || "Membro";
+  };
+
   return (
-    <div className="flex items-center -space-x-2">
-      {displayMembers.map((member, index) => (
-        <Avatar
-          key={member.user_id}
-          className="h-8 w-8 border-2 border-background"
-          style={{ zIndex: displayMembers.length - index }}
-        >
-          <AvatarFallback className="text-xs bg-primary/10 text-primary">
-            {getInitials(member)}
-          </AvatarFallback>
-        </Avatar>
-      ))}
-      {remainingCount > 0 && (
-        <Avatar
-          className="h-8 w-8 border-2 border-background"
-          style={{ zIndex: 0 }}
-        >
-          <AvatarFallback className="text-xs bg-muted text-muted-foreground">
-            +{remainingCount}
-          </AvatarFallback>
-        </Avatar>
-      )}
-    </div>
+    <TooltipProvider>
+      <div className="flex items-center -space-x-2">
+        {displayMembers.map((member, index) => (
+          <Tooltip key={member.user_id}>
+            <TooltipTrigger asChild>
+              <Avatar
+                className="h-8 w-8 border-2 border-background cursor-pointer hover:z-50 transition-transform hover:scale-110"
+                style={{ zIndex: displayMembers.length - index }}
+              >
+                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                  {getInitials(member)}
+                </AvatarFallback>
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{getDisplayName(member)}</p>
+            </TooltipContent>
+          </Tooltip>
+        ))}
+        {remainingCount > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Avatar
+                className="h-8 w-8 border-2 border-background cursor-pointer"
+                style={{ zIndex: 0 }}
+              >
+                <AvatarFallback className="text-xs bg-muted text-muted-foreground">
+                  +{remainingCount}
+                </AvatarFallback>
+              </Avatar>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{remainingCount} {remainingCount === 1 ? 'outro membro' : 'outros membros'}</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }

@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Trash2, Calendar, Clock } from "lucide-react";
+import MemberSelect from "./MemberSelect";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -40,6 +41,7 @@ interface Task {
   created_by: string;
   created_at: string;
   deleted_at: string | null;
+  project_id: string;
 }
 
 interface TaskDialogProps {
@@ -73,6 +75,7 @@ export default function TaskDialog({
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
   const [sprintId, setSprintId] = useState<string | null>(null);
   const [sprints, setSprints] = useState<Array<{ id: string; name: string; status: string }>>([]);
+  const [savingAssignees, setSavingAssignees] = useState(false);
 
   useEffect(() => {
     if (taskId && open) {
@@ -127,6 +130,14 @@ export default function TaskDialog({
       setDueDate(data.due_date || "");
       setSprintId(data.sprint_id || null);
       
+      // Buscar membros atribuídos
+      const { data: assignees } = await supabase
+        .from("task_assignees")
+        .select("user_id")
+        .eq("task_id", taskId);
+      
+      setAssignedMembers(assignees?.map(a => a.user_id) || []);
+      
       // Buscar sprints após carregar a task
       fetchSprintsForProject(data.project_id);
     } catch (error: any) {
@@ -162,6 +173,9 @@ export default function TaskDialog({
 
       if (error) throw error;
 
+      // Atualizar assignees
+      await handleUpdateAssignees();
+
       toast.success("Task atualizada com sucesso!");
       onTaskUpdated?.();
       onOpenChange(false);
@@ -170,6 +184,81 @@ export default function TaskDialog({
       toast.error("Erro ao atualizar task");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleUpdateAssignees = async () => {
+    if (!taskId || !task) return;
+
+    try {
+      setSavingAssignees(true);
+
+      // Buscar assignees atuais
+      const { data: currentAssignees } = await supabase
+        .from("task_assignees")
+        .select("user_id")
+        .eq("task_id", taskId);
+
+      const currentUserIds = currentAssignees?.map(a => a.user_id) || [];
+      
+      // Identificar novos assignees
+      const newAssignees = assignedMembers.filter(
+        userId => !currentUserIds.includes(userId)
+      );
+      
+      // Identificar assignees removidos
+      const removedAssignees = currentUserIds.filter(
+        userId => !assignedMembers.includes(userId)
+      );
+
+      // Remover assignees
+      if (removedAssignees.length > 0) {
+        const { error: deleteError } = await supabase
+          .from("task_assignees")
+          .delete()
+          .eq("task_id", taskId)
+          .in("user_id", removedAssignees);
+
+        if (deleteError) throw deleteError;
+      }
+
+      // Adicionar novos assignees
+      if (newAssignees.length > 0) {
+        const assigneesToInsert = newAssignees.map(userId => ({
+          task_id: taskId,
+          user_id: userId,
+        }));
+
+        const { error: insertError } = await supabase
+          .from("task_assignees")
+          .insert(assigneesToInsert);
+
+        if (insertError) throw insertError;
+
+        // Enviar emails para novos assignees
+        for (const userId of newAssignees) {
+          try {
+            await supabase.functions.invoke("send-task-assignment-email", {
+              body: {
+                taskId: task.id,
+                taskTitle: title,
+                taskDescription: description,
+                dueDate: dueDate,
+                assignedByUserId: user?.id,
+                assignedToUserId: userId,
+              },
+            });
+          } catch (emailError) {
+            console.error("Error sending email:", emailError);
+            // Não bloqueia o fluxo se o email falhar
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error("Error updating assignees:", error);
+      throw error;
+    } finally {
+      setSavingAssignees(false);
     }
   };
 
@@ -376,6 +465,18 @@ export default function TaskDialog({
                 disabled={saving}
               />
             </div>
+
+            {task && (
+              <div className="space-y-2">
+                <Label>Membros Atribuídos</Label>
+                <MemberSelect
+                  projectId={task.project_id}
+                  selectedMembers={assignedMembers}
+                  onMembersChange={setAssignedMembers}
+                  disabled={saving || savingAssignees}
+                />
+              </div>
+            )}
 
             {task && (
               <>

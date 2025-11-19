@@ -42,39 +42,30 @@ export default function SprintsSection() {
   const fetchSprints = async () => {
     try {
       setLoading(true);
-      console.log("Iniciando busca de sprints para usuário:", user?.id);
       
       // Get user's org
-      const { data: userRole, error: roleError } = await supabase
+      const { data: userRole } = await supabase
         .from("user_roles")
         .select("org_id")
         .eq("user_id", user?.id)
         .maybeSingle();
 
-      console.log("User role data:", userRole, "Error:", roleError);
-
       if (!userRole?.org_id) {
-        console.log("Usuário sem organização");
         setSprints([]);
         return;
       }
 
-      console.log("Buscando sprints para org:", userRole.org_id);
       const { data, error } = await supabase
         .from("sprints")
         .select("*")
         .eq("org_id", userRole.org_id)
         .order("start_date", { ascending: false });
 
-      console.log("Sprints data:", data, "Error:", error);
-
       if (error) throw error;
       setSprints(data || []);
-      console.log("Sprints carregadas com sucesso:", data?.length);
     } catch (error: any) {
       console.error("Error fetching sprints:", error);
-      console.error("Error details:", error.message, error.details, error.hint);
-      toast.error(`Erro ao carregar sprints: ${error.message || "Erro desconhecido"}`);
+      toast.error("Erro ao carregar sprints");
     } finally {
       setLoading(false);
     }

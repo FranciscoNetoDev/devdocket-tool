@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +16,14 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const { signUp, signIn, user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      navigate(redirectTo || "/dashboard");
     }
-  }, [user, navigate]);
+  }, [user, navigate, redirectTo]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +36,7 @@ export default function Auth() {
           toast.error(error.message);
         } else {
           toast.success("Bem-vindo de volta!");
-          navigate("/dashboard");
+          navigate(redirectTo || "/dashboard");
         }
       } else {
         if (!name.trim()) {
@@ -52,7 +54,7 @@ export default function Auth() {
           toast.error(error.message);
         } else {
           toast.success("Conta criada com sucesso! Você já pode fazer login.");
-          navigate("/dashboard");
+          navigate(redirectTo || "/dashboard");
         }
       }
     } catch (error: any) {

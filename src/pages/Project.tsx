@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { differenceInDays } from "date-fns";
 import BoardView from "@/components/project/BoardView";
 import BacklogView from "@/components/project/BacklogView";
 import SprintsView from "@/components/project/SprintsView";
@@ -18,6 +19,7 @@ interface Project {
   key: string;
   description: string | null;
   created_at: string;
+  due_date: string | null;
 }
 
 export default function Project() {
@@ -82,7 +84,22 @@ export default function Project() {
                 </div>
                 <div>
                   <h1 className="text-xl font-bold">{project.name}</h1>
-                  <p className="text-xs text-muted-foreground">{project.description}</p>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    {project.description && <p>{project.description}</p>}
+                    {project.due_date && (
+                      <p className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Prazo: {new Date(project.due_date).toLocaleDateString("pt-BR")}
+                        {(() => {
+                          const days = differenceInDays(new Date(project.due_date), new Date());
+                          if (days < 0) return " (atrasado)";
+                          if (days === 0) return " (hoje)";
+                          if (days <= 7) return ` (${days} dias)`;
+                          return "";
+                        })()}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

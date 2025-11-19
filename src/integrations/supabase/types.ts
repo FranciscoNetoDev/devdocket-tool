@@ -213,6 +213,7 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          due_date: string | null
           id: string
           key: string
           name: string
@@ -223,6 +224,7 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          due_date?: string | null
           id?: string
           key: string
           name: string
@@ -233,6 +235,7 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          due_date?: string | null
           id?: string
           key?: string
           name?: string

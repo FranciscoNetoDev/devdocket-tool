@@ -5,8 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List, UsersRound, Link2 } from "lucide-react";
+import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List, UsersRound, Link2, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import { differenceInDays, formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +47,7 @@ interface Project {
   key: string;
   description: string | null;
   created_at: string;
+  due_date: string | null;
   project_members?: Array<{
     user_id: string;
     profiles?: {
@@ -410,8 +413,23 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <CardTitle className="text-lg">{project.name}</CardTitle>
-                            <CardDescription className="text-xs">
-                              Criado em {new Date(project.created_at).toLocaleDateString("pt-BR")}
+                            <CardDescription className="text-xs space-y-1">
+                              <div>Criado em {new Date(project.created_at).toLocaleDateString("pt-BR")}</div>
+                              {project.due_date && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  <span>
+                                    Prazo: {new Date(project.due_date).toLocaleDateString("pt-BR")}
+                                    {(() => {
+                                      const days = differenceInDays(new Date(project.due_date), new Date());
+                                      if (days < 0) return " (atrasado)";
+                                      if (days === 0) return " (hoje)";
+                                      if (days <= 7) return ` (${days} dias)`;
+                                      return "";
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
                             </CardDescription>
                           </div>
                         </div>

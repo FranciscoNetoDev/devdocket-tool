@@ -20,6 +20,7 @@ export default function NewProject() {
     name: "",
     key: "",
     description: "",
+    due_date: "",
   });
 
   const generateKey = (name: string) => {
@@ -99,6 +100,7 @@ export default function NewProject() {
           name: formData.name.trim(),
           key: formData.key.trim().toUpperCase(),
           description: formData.description.trim() || null,
+          due_date: formData.due_date || null,
         })
         .select()
         .single();
@@ -226,6 +228,22 @@ export default function NewProject() {
                 />
                 <p className="text-xs text-muted-foreground">
                   Opcional: adicione mais contexto sobre o projeto
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="due_date">Prazo do Projeto</Label>
+                <Input
+                  id="due_date"
+                  type="date"
+                  value={formData.due_date}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, due_date: e.target.value }))
+                  }
+                  disabled={loading}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Opcional: defina uma data limite para o projeto
                 </p>
               </div>
 

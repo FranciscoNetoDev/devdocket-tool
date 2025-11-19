@@ -19,6 +19,7 @@ interface Project {
   name: string;
   key: string;
   description: string | null;
+  due_date: string | null;
 }
 
 interface EditProjectDialogProps {
@@ -38,6 +39,7 @@ export default function EditProjectDialog({
   const [formData, setFormData] = useState({
     name: project.name,
     description: project.description || "",
+    due_date: project.due_date || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,6 +57,7 @@ export default function EditProjectDialog({
         .update({
           name: formData.name.trim(),
           description: formData.description.trim() || null,
+          due_date: formData.due_date || null,
         })
         .eq("id", project.id);
 
@@ -117,6 +120,19 @@ export default function EditProjectDialog({
               }
               disabled={loading}
               rows={4}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="due_date">Prazo do Projeto</Label>
+            <Input
+              id="due_date"
+              type="date"
+              value={formData.due_date}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, due_date: e.target.value }))
+              }
+              disabled={loading}
             />
           </div>
 

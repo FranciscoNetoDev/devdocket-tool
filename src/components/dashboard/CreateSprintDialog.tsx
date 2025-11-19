@@ -52,53 +52,15 @@ export default function CreateSprintDialog({
 
   const loadLastSprintDates = async () => {
     try {
-      // Get user's org
-      const { data: userRole } = await supabase
-        .from("user_roles")
-        .select("org_id")
-        .eq("user_id", user?.id)
-        .maybeSingle();
-
-      if (!userRole?.org_id) return;
-
-      // Get last sprint ordered by end_date
-      const { data: lastSprint } = await supabase
-        .from("sprints")
-        .select("end_date")
-        .eq("org_id", userRole.org_id)
-        .order("end_date", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (lastSprint?.end_date) {
-        // Start date is the day after the last sprint ended
-        const lastEndDate = new Date(lastSprint.end_date);
-        const today = startOfDay(new Date());
-        
-        // If last sprint ended in the past, start from today
-        const newStartDate = lastEndDate < today 
-          ? today 
-          : addDays(lastEndDate, 1);
-        
-        // End date is 14 days (2 weeks) after start date by default
-        const newEndDate = addDays(newStartDate, parseInt(duration));
-
-        setFormData(prev => ({
-          ...prev,
-          start_date: format(newStartDate, "yyyy-MM-dd"),
-          end_date: format(newEndDate, "yyyy-MM-dd"),
-        }));
-      } else {
-        // No previous sprint, use today as start
-        const today = startOfDay(new Date());
-        const endDate = addDays(today, parseInt(duration));
-        
-        setFormData(prev => ({
-          ...prev,
-          start_date: format(today, "yyyy-MM-dd"),
-          end_date: format(endDate, "yyyy-MM-dd"),
-        }));
-      }
+      // Always start from tomorrow (today + 1 day)
+      const tomorrow = addDays(startOfDay(new Date()), 1);
+      const endDate = addDays(tomorrow, parseInt(duration));
+      
+      setFormData(prev => ({
+        ...prev,
+        start_date: format(tomorrow, "yyyy-MM-dd"),
+        end_date: format(endDate, "yyyy-MM-dd"),
+      }));
     } catch (error) {
       console.error("Error loading last sprint:", error);
     }
@@ -110,13 +72,13 @@ export default function CreateSprintDialog({
 
     try {
       // Validations
-      const startDate = new Date(formData.start_date);
-      const endDate = new Date(formData.end_date);
-      const today = startOfDay(new Date());
+      const startDate = startOfDay(new Date(formData.start_date));
+      const endDate = startOfDay(new Date(formData.end_date));
+      const tomorrow = addDays(startOfDay(new Date()), 1);
       
-      // Check if start date is not in the past
-      if (startDate < today) {
-        toast.error("Não é possível criar sprints com data de início no passado");
+      // Check if start date is at least tomorrow
+      if (startDate < tomorrow) {
+        toast.error("A data de início deve ser a partir de amanhã");
         setLoading(false);
         return;
       }
@@ -124,7 +86,7 @@ export default function CreateSprintDialog({
       // Check if duration is 7 or 14 days
       const daysDiff = differenceInDays(endDate, startDate);
       if (daysDiff !== 7 && daysDiff !== 14) {
-        toast.error("A duração da sprint deve ser de 1 ou 2 semanas (7 ou 14 dias)");
+        toast.error(`A duração da sprint deve ser de 1 ou 2 semanas (7 ou 14 dias). Duração atual: ${daysDiff} dias`);
         setLoading(false);
         return;
       }
@@ -227,7 +189,7 @@ export default function CreateSprintDialog({
                 id="start_date"
                 type="date"
                 value={formData.start_date}
-                min={format(new Date(), "yyyy-MM-dd")}
+                min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
                 onChange={(e) => {
                   const newStartDate = new Date(e.target.value);
                   const newEndDate = addDays(newStartDate, parseInt(duration));

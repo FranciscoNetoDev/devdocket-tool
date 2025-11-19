@@ -4,6 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Loader2, CheckCircle2, XCircle, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,7 +30,7 @@ interface AcceptInviteResult {
 
 export default function AcceptInvite() {
   const { token } = useParams<{ token: string }>();
-  const { user } = useAuth();
+  const { user, signIn } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [accepting, setAccepting] = useState(false);
@@ -36,12 +38,22 @@ export default function AcceptInvite() {
   const [project, setProject] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [loggingIn, setLoggingIn] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (token) {
       validateInvite();
     }
   }, [token]);
+
+  // Auto-accept invite after login
+  useEffect(() => {
+    if (user && invite && !success && !accepting) {
+      acceptInvite();
+    }
+  }, [user]);
 
   const validateInvite = async () => {
     try {
@@ -92,7 +104,6 @@ export default function AcceptInvite() {
   const acceptInvite = async () => {
     if (!user) {
       toast.error("Você precisa estar logado para aceitar o convite");
-      navigate("/auth", { state: { returnTo: `/i/${token}` } });
       return;
     }
 
@@ -120,7 +131,7 @@ export default function AcceptInvite() {
         toast.success("Convite aceito com sucesso!");
         
         setTimeout(() => {
-          navigate(`/project/${result.project_id}`);
+          navigate(`/projects/${result.project_id}`);
         }, 2000);
       }
     } catch (error: any) {
@@ -128,6 +139,33 @@ export default function AcceptInvite() {
       toast.error("Erro ao aceitar convite");
     } finally {
       setAccepting(false);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !password) {
+      toast.error("Preencha todos os campos");
+      return;
+    }
+
+    setLoggingIn(true);
+    try {
+      const { error } = await signIn(email, password);
+      
+      if (error) {
+        toast.error(error.message || "Erro ao fazer login");
+        return;
+      }
+
+      toast.success("Login realizado com sucesso!");
+      // After login, the useEffect will re-run and user will be able to accept
+    } catch (error: any) {
+      console.error("Login error:", error);
+      toast.error("Erro ao fazer login");
+    } finally {
+      setLoggingIn(false);
     }
   };
 
@@ -209,20 +247,67 @@ export default function AcceptInvite() {
           </div>
 
           {!user ? (
-            <div className="space-y-4 text-center">
-              <div className="p-4 rounded-lg bg-muted/50 border border-border/50">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="p-4 rounded-lg bg-muted/50 border border-border/50 mb-4">
                 <p className="text-sm text-foreground">
-                  Você precisa estar logado para aceitar este convite
+                  Faça login para aceitar o convite
                 </p>
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loggingIn}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={loggingIn}
+                />
+              </div>
+
               <Button 
-                onClick={() => navigate("/auth", { state: { returnTo: `/i/${token}` } })} 
+                type="submit"
+                disabled={loggingIn}
                 className="w-full h-11"
                 size="lg"
               >
-                Fazer Login
+                {loggingIn ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  "Fazer Login e Aceitar Convite"
+                )}
               </Button>
-            </div>
+
+              <p className="text-center text-sm text-muted-foreground">
+                Não tem conta?{" "}
+                <Button
+                  type="button"
+                  variant="link"
+                  className="p-0 h-auto"
+                  onClick={() => navigate("/auth", { state: { returnTo: `/i/${token}` } })}
+                >
+                  Criar conta
+                </Button>
+              </p>
+            </form>
           ) : (
             <Button 
               onClick={acceptInvite} 

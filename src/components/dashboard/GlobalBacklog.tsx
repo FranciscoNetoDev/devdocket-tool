@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronRight, FolderOpen, FileText, CheckSquare, Package } from "lucide-react";
+import { Loader2, ChevronRight, FolderOpen, FileText, CheckSquare, Package, Clock, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,8 @@ interface Task {
   title: string;
   status: string;
   priority: string;
+  estimated_hours: number | null;
+  actual_hours: number | null;
 }
 
 const priorityConfig = {
@@ -112,7 +114,7 @@ export default function GlobalBacklog() {
 
               const { data: tasksData, error: tasksError } = await supabase
                 .from("tasks")
-                .select("id, title, status, priority")
+                .select("id, title, status, priority, estimated_hours, actual_hours")
                 .eq("user_story_id", story.id)
                 .is("deleted_at", null)
                 .order("status")
@@ -182,6 +184,56 @@ export default function GlobalBacklog() {
     return projects.reduce((total, project) => total + project.user_stories.length, 0);
   };
 
+  const getTotalRemainingHours = () => {
+    return projects.reduce(
+      (total, project) =>
+        total +
+        project.user_stories.reduce(
+          (storyTotal, story) =>
+            storyTotal +
+            story.tasks.reduce((taskTotal, task) => {
+              const remaining = task.estimated_hours 
+                ? (task.estimated_hours - (task.actual_hours || 0))
+                : 0;
+              return taskTotal + (remaining > 0 ? remaining : 0);
+            }, 0),
+          0
+        ),
+      0
+    );
+  };
+
+  const getAverageDifficulty = () => {
+    const priorityValues: Record<string, number> = {
+      low: 1,
+      medium: 2,
+      high: 3,
+      critical: 4,
+    };
+
+    let totalDifficulty = 0;
+    let totalTasks = 0;
+
+    projects.forEach((project) => {
+      project.user_stories.forEach((story) => {
+        story.tasks.forEach((task) => {
+          totalDifficulty += priorityValues[task.priority] || 0;
+          totalTasks++;
+        });
+      });
+    });
+
+    if (totalTasks === 0) return 0;
+    return (totalDifficulty / totalTasks).toFixed(1);
+  };
+
+  const getDifficultyLabel = (avg: number) => {
+    if (avg <= 1.5) return "Baixa";
+    if (avg <= 2.5) return "Média";
+    if (avg <= 3.5) return "Alta";
+    return "Crítica";
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -201,21 +253,41 @@ export default function GlobalBacklog() {
         </div>
         <Card className="bg-primary/5 border-primary/20">
           <CardContent className="pt-4 md:pt-6 px-4">
-            <div className="flex items-center justify-between md:gap-6 gap-3 text-xs md:text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 text-xs md:text-sm">
               <div className="flex items-center gap-1.5 md:gap-2">
-                <Package className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
-                <span className="font-semibold">{projects.length}</span>
-                <span className="text-muted-foreground hidden sm:inline">projetos</span>
+                <Package className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+                <div className="flex flex-col">
+                  <span className="font-semibold">{projects.length}</span>
+                  <span className="text-muted-foreground text-[10px] md:text-xs">projetos</span>
+                </div>
               </div>
               <div className="flex items-center gap-1.5 md:gap-2">
-                <FileText className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600" />
-                <span className="font-semibold">{getTotalStoriesCount()}</span>
-                <span className="text-muted-foreground hidden sm:inline">stories</span>
+                <FileText className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600 flex-shrink-0" />
+                <div className="flex flex-col">
+                  <span className="font-semibold">{getTotalStoriesCount()}</span>
+                  <span className="text-muted-foreground text-[10px] md:text-xs">stories</span>
+                </div>
               </div>
               <div className="flex items-center gap-1.5 md:gap-2">
-                <CheckSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-600" />
-                <span className="font-semibold">{getTotalTasksCount()}</span>
-                <span className="text-muted-foreground hidden sm:inline">tasks</span>
+                <CheckSquare className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-600 flex-shrink-0" />
+                <div className="flex flex-col">
+                  <span className="font-semibold">{getTotalTasksCount()}</span>
+                  <span className="text-muted-foreground text-[10px] md:text-xs">tasks</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <Clock className="h-3.5 w-3.5 md:h-4 md:w-4 text-orange-600 flex-shrink-0" />
+                <div className="flex flex-col">
+                  <span className="font-semibold">{getTotalRemainingHours().toFixed(1)}h</span>
+                  <span className="text-muted-foreground text-[10px] md:text-xs">restantes</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <TrendingUp className="h-3.5 w-3.5 md:h-4 md:w-4 text-purple-600 flex-shrink-0" />
+                <div className="flex flex-col">
+                  <span className="font-semibold">{getDifficultyLabel(Number(getAverageDifficulty()))}</span>
+                  <span className="text-muted-foreground text-[10px] md:text-xs">dificuldade</span>
+                </div>
               </div>
             </div>
           </CardContent>

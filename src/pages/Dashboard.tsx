@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users } from "lucide-react";
+import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -14,6 +15,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,6 +53,8 @@ export default function Dashboard() {
   const [managingMembersProject, setManagingMembersProject] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "date" | "key">("date");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -119,6 +129,28 @@ export default function Dashboard() {
       setDeleting(false);
     }
   };
+
+  // Filter and sort projects
+  const filteredAndSortedProjects = projects
+    .filter((project) => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        project.name.toLowerCase().includes(searchLower) ||
+        project.key.toLowerCase().includes(searchLower) ||
+        project.description?.toLowerCase().includes(searchLower)
+      );
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "key":
+          return a.key.localeCompare(b.key);
+        case "date":
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+    });
 
   if (authLoading || !user) {
     return (
@@ -197,6 +229,30 @@ export default function Dashboard() {
             </Button>
           </div>
 
+          {/* Search and Filter Section */}
+          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, chave ou descrição..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SortAsc className="mr-2 h-4 w-4" />
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">Data de criação</SelectItem>
+                <SelectItem value="name">Nome (A-Z)</SelectItem>
+                <SelectItem value="key">Chave (A-Z)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -216,9 +272,23 @@ export default function Dashboard() {
                 </Button>
               </CardContent>
             </Card>
+          ) : filteredAndSortedProjects.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Search className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Nenhum projeto encontrado</h3>
+                <p className="text-muted-foreground mb-6 text-center max-w-md">
+                  Não encontramos projetos que correspondam à sua busca.
+                  Tente usar outros termos.
+                </p>
+                <Button variant="outline" onClick={() => setSearchTerm("")}>
+                  Limpar Busca
+                </Button>
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => (
+              {filteredAndSortedProjects.map((project) => (
                 <Card
                   key={project.id}
                   className="hover:shadow-medium transition-all group"

@@ -22,6 +22,7 @@ interface Project {
   description: string | null;
   created_at: string;
   due_date: string | null;
+  icon_name?: string | null;
 }
 
 export default function Project() {
@@ -81,7 +82,11 @@ export default function Project() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-3">
-                <ProjectIcon projectKey={project.key} size="sm" />
+                <ProjectIcon 
+                  projectKey={project.key} 
+                  iconName={project.icon_name || undefined}
+                  size="sm" 
+                />
                 <div>
                   <h1 className="text-xl font-bold">{project.name}</h1>
                   <div className="text-xs text-muted-foreground space-y-1">

@@ -1,8 +1,10 @@
 import { FolderKanban } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getIconComponent } from "./IconPicker";
 
 interface ProjectIconProps {
   projectKey?: string;
+  iconName?: string;
   size?: "sm" | "md" | "lg";
   className?: string;
   showKey?: boolean;
@@ -28,11 +30,13 @@ const sizeMap = {
 
 export default function ProjectIcon({ 
   projectKey, 
+  iconName,
   size = "md", 
   className,
   showKey = true 
 }: ProjectIconProps) {
   const sizes = sizeMap[size];
+  const IconComponent = iconName ? getIconComponent(iconName) : FolderKanban;
   
   return (
     <div 
@@ -47,7 +51,7 @@ export default function ProjectIcon({
           {projectKey}
         </span>
       ) : (
-        <FolderKanban className={cn("text-primary", sizes.icon)} />
+        <IconComponent className={cn("text-primary", sizes.icon)} />
       )}
     </div>
   );

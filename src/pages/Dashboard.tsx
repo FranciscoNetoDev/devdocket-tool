@@ -52,6 +52,7 @@ interface Project {
   description: string | null;
   created_at: string;
   due_date: string | null;
+  icon_name?: string | null;
   project_members?: Array<{
     user_id: string;
     profiles?: {
@@ -428,7 +429,8 @@ export default function Dashboard() {
                           onClick={() => navigate(`/projects/${project.id}`)}
                         >
                           <ProjectIcon 
-                            projectKey={project.key} 
+                            projectKey={project.key}
+                            iconName={project.icon_name || undefined}
                             size="md"
                             className="group-hover:bg-primary/20"
                           />
@@ -527,7 +529,8 @@ export default function Dashboard() {
                           onClick={() => navigate(`/projects/${project.id}`)}
                         >
                           <ProjectIcon 
-                            projectKey={project.key} 
+                            projectKey={project.key}
+                            iconName={project.icon_name || undefined}
                             size="lg"
                             className="group-hover:bg-primary/20"
                           />

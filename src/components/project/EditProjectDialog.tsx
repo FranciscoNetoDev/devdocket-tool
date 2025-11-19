@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import IconPicker from "./IconPicker";
 
 interface Project {
   id: string;
@@ -20,6 +21,7 @@ interface Project {
   key: string;
   description: string | null;
   due_date: string | null;
+  icon_name?: string | null;
 }
 
 interface EditProjectDialogProps {
@@ -40,6 +42,7 @@ export default function EditProjectDialog({
     name: project.name,
     description: project.description || "",
     due_date: project.due_date || "",
+    icon_name: project.icon_name || "folder-kanban",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,6 +61,7 @@ export default function EditProjectDialog({
           name: formData.name.trim(),
           description: formData.description.trim() || null,
           due_date: formData.due_date || null,
+          icon_name: formData.icon_name,
         })
         .eq("id", project.id);
 
@@ -109,6 +113,14 @@ export default function EditProjectDialog({
               A chave do projeto não pode ser alterada
             </p>
           </div>
+
+          <IconPicker
+            value={formData.icon_name}
+            onChange={(icon_name) => 
+              setFormData((prev) => ({ ...prev, icon_name }))
+            }
+            label="Ícone do Projeto"
+          />
 
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>

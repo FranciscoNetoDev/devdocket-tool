@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, UserPlus, UserMinus, Crown } from "lucide-react";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ interface Member {
     full_name: string | null;
     nickname: string | null;
     email: string | null;
+    avatar_url: string | null;
   } | null;
 }
 
@@ -82,7 +83,7 @@ export default function TeamView({ projectId }: TeamViewProps) {
       const userIds = projectMembers.map(pm => pm.user_id);
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, full_name, nickname, email")
+        .select("id, full_name, nickname, email, avatar_url")
         .in("id", userIds);
 
       if (profilesError) throw profilesError;
@@ -226,6 +227,9 @@ export default function TeamView({ projectId }: TeamViewProps) {
               >
                 <div className="flex items-center gap-3">
                   <Avatar>
+                    {member.profiles?.avatar_url && (
+                      <AvatarImage src={member.profiles.avatar_url} alt={member.profiles?.nickname || member.profiles?.full_name || ""} />
+                    )}
                     <AvatarFallback className="bg-primary text-primary-foreground">
                       {getInitials(member.profiles?.nickname, member.profiles?.full_name, member.profiles?.email)}
                     </AvatarFallback>

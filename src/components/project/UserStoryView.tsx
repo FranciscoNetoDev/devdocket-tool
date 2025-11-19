@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Loader2, Edit, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Loader2, Edit, Trash2, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import UserStoryDialog from "./UserStoryDialog";
 import {
@@ -68,9 +70,19 @@ export default function UserStoryView({ projectId }: UserStoryViewProps) {
   const [selectedStory, setSelectedStory] = useState<UserStory | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [storyToDelete, setStoryToDelete] = useState<string | null>(null);
+  
+  // Filtros
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [sprintFilter, setSprintFilter] = useState<string>("all");
+  const [sprints, setSprints] = useState<Array<{ id: string; name: string }>>([]);
+  const [sprintStories, setSprintStories] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     fetchStories();
+    fetchSprints();
+    fetchSprintStories();
 
     const channel = supabase
       .channel("user_stories_changes")
@@ -84,6 +96,7 @@ export default function UserStoryView({ projectId }: UserStoryViewProps) {
         },
         () => {
           fetchStories();
+          fetchSprintStories();
         }
       )
       .subscribe();
@@ -109,6 +122,43 @@ export default function UserStoryView({ projectId }: UserStoryViewProps) {
       toast.error("Erro ao carregar user stories");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSprints = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sprints")
+        .select("id, name")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setSprints(data || []);
+    } catch (error: any) {
+      console.error("Error fetching sprints:", error);
+    }
+  };
+
+  const fetchSprintStories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("sprint_user_stories")
+        .select("sprint_id, user_story_id");
+
+      if (error) throw error;
+      
+      const mapping: Record<string, string[]> = {};
+      data?.forEach((item) => {
+        if (!mapping[item.sprint_id]) {
+          mapping[item.sprint_id] = [];
+        }
+        mapping[item.sprint_id].push(item.user_story_id);
+      });
+      
+      setSprintStories(mapping);
+    } catch (error: any) {
+      console.error("Error fetching sprint stories:", error);
     }
   };
 
@@ -141,6 +191,61 @@ export default function UserStoryView({ projectId }: UserStoryViewProps) {
     setDialogOpen(true);
   };
 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("all");
+    setPriorityFilter("all");
+    setSprintFilter("all");
+  };
+
+  // Aplicar filtros
+  const filteredStories = stories.filter((story) => {
+    // Filtro de busca
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      const matchesTitle = story.title.toLowerCase().includes(searchLower);
+      const matchesDescription = story.description?.toLowerCase().includes(searchLower);
+      const matchesCriteria = story.acceptance_criteria?.toLowerCase().includes(searchLower);
+      
+      if (!matchesTitle && !matchesDescription && !matchesCriteria) {
+        return false;
+      }
+    }
+
+    // Filtro de status
+    if (statusFilter !== "all" && story.status !== statusFilter) {
+      return false;
+    }
+
+    // Filtro de prioridade
+    if (priorityFilter !== "all" && story.priority !== priorityFilter) {
+      return false;
+    }
+
+    // Filtro de sprint
+    if (sprintFilter !== "all") {
+      if (sprintFilter === "no-sprint") {
+        // Verificar se a story não está em nenhuma sprint
+        const isInAnySprint = Object.values(sprintStories).some(storyIds => 
+          storyIds.includes(story.id)
+        );
+        if (isInAnySprint) {
+          return false;
+        }
+      } else {
+        // Verificar se a story está na sprint selecionada
+        const storiesInSprint = sprintStories[sprintFilter] || [];
+        if (!storiesInSprint.includes(story.id)) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  });
+
+  const hasActiveFilters = searchTerm || statusFilter !== "all" || priorityFilter !== "all" || sprintFilter !== "all";
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -162,6 +267,76 @@ export default function UserStoryView({ projectId }: UserStoryViewProps) {
         </Button>
       </div>
 
+      {/* Filtros */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por título, descrição..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todos os status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="draft">Rascunho</SelectItem>
+                <SelectItem value="ready">Pronta</SelectItem>
+                <SelectItem value="in_progress">Em Progresso</SelectItem>
+                <SelectItem value="done">Concluída</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as prioridades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as prioridades</SelectItem>
+                <SelectItem value="low">Baixa</SelectItem>
+                <SelectItem value="medium">Média</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="critical">Crítica</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sprintFilter} onValueChange={setSprintFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Todas as sprints" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as sprints</SelectItem>
+                <SelectItem value="no-sprint">Sem sprint</SelectItem>
+                {sprints.map((sprint) => (
+                  <SelectItem key={sprint.id} value={sprint.id}>
+                    {sprint.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {hasActiveFilters && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                {filteredStories.length} de {stories.length} user stories
+              </p>
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="mr-2 h-4 w-4" />
+                Limpar filtros
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {stories.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -172,9 +347,19 @@ export default function UserStoryView({ projectId }: UserStoryViewProps) {
             </Button>
           </CardContent>
         </Card>
+      ) : filteredStories.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground mb-4">Nenhuma user story encontrada com os filtros aplicados</p>
+            <Button variant="outline" onClick={clearFilters}>
+              <X className="mr-2 h-4 w-4" />
+              Limpar filtros
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4">
-          {stories.map((story) => (
+          {filteredStories.map((story) => (
             <Card key={story.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">

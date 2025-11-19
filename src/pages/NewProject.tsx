@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft, Loader2, FolderKanban } from "lucide-react";
 import { toast } from "sonner";
 import UserSelect from "@/components/project/UserSelect";
+import IconPicker from "@/components/project/IconPicker";
 
 export default function NewProject() {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ export default function NewProject() {
     key: "",
     description: "",
     due_date: "",
+    icon_name: "folder-kanban",
   });
 
   const generateKey = (name: string) => {
@@ -101,6 +103,7 @@ export default function NewProject() {
           key: formData.key.trim().toUpperCase(),
           description: formData.description.trim() || null,
           due_date: formData.due_date || null,
+          icon_name: formData.icon_name,
         })
         .select()
         .single();
@@ -213,6 +216,14 @@ export default function NewProject() {
                   Identificador único (até 10 caracteres). Ex: ECOM-123
                 </p>
               </div>
+
+              <IconPicker
+                value={formData.icon_name}
+                onChange={(icon_name) => 
+                  setFormData(prev => ({ ...prev, icon_name }))
+                }
+                label="Ícone do Projeto"
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="description">Descrição</Label>

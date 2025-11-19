@@ -27,6 +27,7 @@ interface Task {
   priority: string;
   project_id: string;
   user_story_id: string;
+  due_date: string | null;
   projects: {
     name: string;
     key: string;
@@ -91,20 +92,22 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
       if (storiesData.length > 0) {
         const storyIds = storiesData.map(s => s.id);
         
-        const { data: tasksData, error: tasksError } = await supabase
-          .from("tasks")
-          .select(`
-            id,
-            title,
-            status,
-            priority,
-            user_story_id,
-            project_id,
-            projects:project_id (name, key)
-          `)
-          .in("user_story_id", storyIds)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false });
+      const { data: tasksData, error: tasksError } = await supabase
+        .from("tasks")
+        .select(`
+          id,
+          title,
+          status,
+          priority,
+          user_story_id,
+          project_id,
+          due_date,
+          projects:project_id (name, key)
+        `)
+        .in("user_story_id", storyIds)
+        .is("deleted_at", null)
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false });
 
         if (tasksError) throw tasksError;
         setTasks(tasksData || []);
@@ -254,6 +257,7 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
             startDate={sprint.start_date}
             endDate={sprint.end_date}
             userStories={userStories}
+            tasks={tasks}
           />
         </TabsContent>
 

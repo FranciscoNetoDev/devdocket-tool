@@ -31,7 +31,17 @@ export default function NewTask() {
     e.preventDefault();
     
     if (!title.trim()) {
-      toast.error("Título é obrigatório");
+      toast.error("Por favor, preencha o título da task");
+      return;
+    }
+
+    if (!projectId) {
+      toast.error("Projeto não identificado. Tente voltar e acessar novamente.");
+      return;
+    }
+
+    if (!user) {
+      toast.error("Você precisa estar autenticado para criar tasks");
       return;
     }
 
@@ -46,15 +56,29 @@ export default function NewTask() {
           description: description.trim() || null,
           priority,
           status,
-          project_id: projectId!,
-          created_by: user!.id,
+          project_id: projectId,
+          created_by: user.id,
           estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
           due_date: dueDate || null,
         }])
         .select()
         .single();
 
-      if (taskError) throw taskError;
+      if (taskError) {
+        console.error("Error creating task:", taskError);
+        
+        // Mensagens de erro amigáveis baseadas no código
+        if (taskError.code === "42501") {
+          toast.error("Você não tem permissão para criar tasks neste projeto. Verifique se você é membro do projeto.");
+        } else if (taskError.code === "23503") {
+          toast.error("Projeto não encontrado ou inválido. Tente recarregar a página.");
+        } else if (taskError.message.includes("permission")) {
+          toast.error("Você não tem permissão para realizar esta ação.");
+        } else {
+          toast.error(`Erro ao criar task: ${taskError.message || "Erro desconhecido"}`);
+        }
+        return;
+      }
 
       // Add assignees if any
       if (assignedMembers.length > 0 && taskData) {
@@ -67,14 +91,19 @@ export default function NewTask() {
           .from("task_assignees")
           .insert(assignees);
 
-        if (assigneesError) throw assigneesError;
+        if (assigneesError) {
+          console.error("Error assigning members:", assigneesError);
+          toast.warning("Task criada, mas houve erro ao atribuir membros. Você pode fazer isso depois.");
+          navigate(`/projects/${projectId}`);
+          return;
+        }
       }
 
-      toast.success("Task criada com sucesso!");
+      toast.success("✅ Task criada com sucesso!");
       navigate(`/projects/${projectId}`);
     } catch (error: any) {
-      console.error("Error creating task:", error);
-      toast.error("Erro ao criar task");
+      console.error("Unexpected error creating task:", error);
+      toast.error("Ocorreu um erro inesperado. Por favor, tente novamente ou contate o suporte.");
     } finally {
       setLoading(false);
     }

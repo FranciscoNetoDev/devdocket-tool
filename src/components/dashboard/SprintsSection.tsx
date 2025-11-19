@@ -175,11 +175,27 @@ export default function SprintsSection() {
     }
   };
 
+  const handleNavigateSprint = (direction: 'prev' | 'next') => {
+    if (!selectedSprint) return;
+    
+    const currentIndex = sprints.findIndex(s => s.id === selectedSprint.id);
+    if (currentIndex === -1) return;
+    
+    const newIndex = direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+    if (newIndex >= 0 && newIndex < sprints.length) {
+      setSelectedSprint(sprints[newIndex]);
+    }
+  };
+
   if (selectedSprint) {
+    const currentIndex = sprints.findIndex(s => s.id === selectedSprint.id);
     return (
       <SprintDetailView
         sprint={selectedSprint}
         onBack={() => setSelectedSprint(null)}
+        onNavigate={handleNavigateSprint}
+        hasNext={currentIndex < sprints.length - 1}
+        hasPrev={currentIndex > 0}
       />
     );
   }

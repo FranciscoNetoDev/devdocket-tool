@@ -29,6 +29,7 @@ interface DroppableColumnProps {
   color: string;
   tasks: Task[];
   onTaskClick: (taskId: string) => void;
+  onRemoveTask?: (taskId: string) => void;
 }
 
 export default function DroppableColumn({
@@ -37,6 +38,7 @@ export default function DroppableColumn({
   color,
   tasks,
   onTaskClick,
+  onRemoveTask,
 }: DroppableColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
@@ -67,6 +69,7 @@ export default function DroppableColumn({
               key={task.id}
               task={task}
               onClick={() => onTaskClick(task.id)}
+              onRemove={onRemoveTask ? () => onRemoveTask(task.id) : undefined}
             />
           ))}
         </SortableContext>

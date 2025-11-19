@@ -2,7 +2,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Clock, AlertCircle, GripVertical } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, AlertCircle, GripVertical, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Task {
@@ -24,6 +25,7 @@ interface Task {
 interface DraggableTaskCardProps {
   task: Task;
   onClick: () => void;
+  onRemove?: () => void;
 }
 
 const priorityColors = {
@@ -33,7 +35,7 @@ const priorityColors = {
   critical: "bg-red-500",
 };
 
-export default function DraggableTaskCard({ task, onClick }: DraggableTaskCardProps) {
+export default function DraggableTaskCard({ task, onClick, onRemove }: DraggableTaskCardProps) {
   const {
     attributes,
     listeners,
@@ -80,15 +82,30 @@ export default function DraggableTaskCard({ task, onClick }: DraggableTaskCardPr
           {/* Task Content */}
           <div className="flex-1" onClick={onClick}>
             <div className="flex items-start justify-between gap-2 mb-2">
-              <CardTitle className="text-sm font-medium line-clamp-2">
+              <CardTitle className="text-sm font-medium line-clamp-2 flex-1">
                 {task.title}
               </CardTitle>
-              <div
-                className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                  priorityColors[task.priority as keyof typeof priorityColors]
-                }`}
-                title={`Prioridade: ${task.priority}`}
-              />
+              <div className="flex items-center gap-1">
+                <div
+                  className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    priorityColors[task.priority as keyof typeof priorityColors]
+                  }`}
+                  title={`Prioridade: ${task.priority}`}
+                />
+                {onRemove && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 -mr-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRemove();
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
             </div>
             {task.description && (
               <p className="text-xs text-muted-foreground line-clamp-2">

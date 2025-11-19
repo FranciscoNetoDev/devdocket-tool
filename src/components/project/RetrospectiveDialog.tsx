@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 interface RetrospectiveDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  projectId: string;
+  sprintId: string;
   retrospective?: {
     id: string;
     title: string;
@@ -42,7 +42,7 @@ const categoryLabels = {
 export default function RetrospectiveDialog({
   open,
   onOpenChange,
-  projectId,
+  sprintId,
   retrospective,
   onSuccess,
 }: RetrospectiveDialogProps) {
@@ -106,7 +106,7 @@ export default function RetrospectiveDialog({
         const { data, error: insertError } = await supabase
           .from("retrospectives")
           .insert([{
-            project_id: projectId,
+            sprint_id: sprintId,
             title,
             date,
             created_by: user?.id!,

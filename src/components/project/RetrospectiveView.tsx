@@ -1,23 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Loader2, Edit, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import RetrospectiveDialog from "./RetrospectiveDialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-
-interface Retrospective {
-  id: string;
-  title: string;
-  date: string;
-  sprint_id: string | null;
-  created_at: string;
-  items: RetrospectiveItem[];
-}
 
 interface RetrospectiveItem {
   id: string;
@@ -25,6 +14,15 @@ interface RetrospectiveItem {
   content: string;
   created_by: string;
   created_at: string;
+}
+
+interface Retrospective {
+  id: string;
+  title: string;
+  date: string;
+  sprint_id: string;
+  sprints: { name: string } | null;
+  retrospective_items: RetrospectiveItem[];
 }
 
 interface RetrospectiveViewProps {
@@ -49,49 +47,37 @@ export default function RetrospectiveView({ projectId }: RetrospectiveViewProps)
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [retrospectives, setRetrospectives] = useState<Retrospective[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedRetro, setSelectedRetro] = useState<Retrospective | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [retroToDelete, setRetroToDelete] = useState<string | null>(null);
 
   useEffect(() => {
-    if (projectId) {
-      fetchRetrospectives();
-    }
+    fetchRetrospectives();
   }, [projectId]);
 
   const fetchRetrospectives = async () => {
     try {
       setLoading(true);
-      const { data: retros, error: retrosError } = await supabase
+
+      // Buscar retrospectivas das sprints
+      const { data, error } = await supabase
         .from("retrospectives")
-        .select("*")
-        .eq("project_id", projectId)
+        .select(`
+          id,
+          title,
+          date,
+          sprint_id,
+          sprints:sprint_id(name),
+          retrospective_items (
+            id,
+            category,
+            content,
+            created_by,
+            created_at
+          )
+        `)
         .order("date", { ascending: false });
 
-      if (retrosError) throw retrosError;
+      if (error) throw error;
 
-      if (retros && retros.length > 0) {
-        const { data: items, error: itemsError } = await supabase
-          .from("retrospective_items")
-          .select("*")
-          .in("retrospective_id", retros.map(r => r.id))
-          .order("created_at", { ascending: true });
-
-        if (itemsError) throw itemsError;
-
-        const retrospectivesWithItems = retros.map(retro => ({
-          ...retro,
-          items: (items?.filter(item => item.retrospective_id === retro.id) || []).map(item => ({
-            ...item,
-            category: item.category as "good" | "bad" | "risk" | "opportunity",
-          })),
-        }));
-
-        setRetrospectives(retrospectivesWithItems);
-      } else {
-        setRetrospectives([]);
-      }
+      setRetrospectives(data as any || []);
     } catch (error: any) {
       console.error("Error fetching retrospectives:", error);
       toast.error("Erro ao carregar retrospectivas");
@@ -100,50 +86,9 @@ export default function RetrospectiveView({ projectId }: RetrospectiveViewProps)
     }
   };
 
-  const handleEdit = (retro: Retrospective) => {
-    setSelectedRetro(retro);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async () => {
-    if (!retroToDelete) return;
-
-    try {
-      const { error } = await supabase
-        .from("retrospectives")
-        .delete()
-        .eq("id", retroToDelete);
-
-      if (error) throw error;
-
-      toast.success("Retrospectiva excluída com sucesso!");
-      fetchRetrospectives();
-    } catch (error: any) {
-      console.error("Error deleting retrospective:", error);
-      toast.error("Erro ao excluir retrospectiva");
-    } finally {
-      setDeleteDialogOpen(false);
-      setRetroToDelete(null);
-    }
-  };
-
-  const handleNewRetro = () => {
-    setSelectedRetro(null);
-    setDialogOpen(true);
-  };
-
-  const groupedItems = (items: RetrospectiveItem[]) => {
-    return {
-      good: items.filter(i => i.category === "good"),
-      bad: items.filter(i => i.category === "bad"),
-      risk: items.filter(i => i.category === "risk"),
-      opportunity: items.filter(i => i.category === "opportunity"),
-    };
-  };
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -154,103 +99,72 @@ export default function RetrospectiveView({ projectId }: RetrospectiveViewProps)
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Retrospectivas</h2>
-          <p className="text-muted-foreground">Gerencie as retrospectivas do projeto</p>
+          <p className="text-muted-foreground">Retrospectivas das sprints concluídas</p>
         </div>
-        <Button onClick={handleNewRetro}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nova Retrospectiva
-        </Button>
       </div>
 
       {retrospectives.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-4">Nenhuma retrospectiva criada ainda</p>
-            <Button onClick={handleNewRetro}>
-              <Plus className="mr-2 h-4 w-4" />
-              Criar Primeira Retrospectiva
-            </Button>
+            <p className="text-muted-foreground mb-2">Nenhuma retrospectiva criada ainda</p>
+            <p className="text-sm text-muted-foreground">
+              Retrospectivas são criadas ao finalizar sprints
+            </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {retrospectives.map((retro) => {
-            const grouped = groupedItems(retro.items);
-            return (
-              <Card key={retro.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>{retro.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(retro.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => handleEdit(retro)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setRetroToDelete(retro.id);
-                          setDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+        <div className="space-y-4">
+          {retrospectives.map((retro) => (
+            <Card key={retro.id}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>{retro.title}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    {retro.sprints && (
+                      <Badge variant="outline" className="bg-purple-50">
+                        Sprint: {retro.sprints.name}
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(retro.date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                    </Badge>
                   </div>
-                </CardHeader>
-                <CardContent>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {retro.retrospective_items.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum item registrado</p>
+                ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {(Object.keys(grouped) as Array<keyof typeof grouped>).map((category) => (
-                      <div key={category} className={`p-4 rounded-lg border ${categoryColors[category]}`}>
-                        <h4 className="font-semibold mb-3">{categoryLabels[category]}</h4>
-                        <ul className="space-y-2">
-                          {grouped[category].length === 0 ? (
-                            <li className="text-sm text-muted-foreground italic">Nenhum item</li>
-                          ) : (
-                            grouped[category].map((item) => (
-                              <li key={item.id} className="text-sm">
-                                • {item.content}
-                              </li>
-                            ))
-                          )}
-                        </ul>
-                      </div>
-                    ))}
+                    {["good", "bad", "risk", "opportunity"].map((category) => {
+                      const items = retro.retrospective_items.filter(item => item.category === category);
+                      if (items.length === 0) return null;
+
+                      return (
+                        <div key={category} className="space-y-2">
+                          <h4 className="font-semibold text-sm">
+                            {categoryLabels[category as keyof typeof categoryLabels]}
+                          </h4>
+                          <div className="space-y-2">
+                            {items.map((item) => (
+                              <Card key={item.id} className={categoryColors[category as keyof typeof categoryColors]}>
+                                <CardContent className="p-3">
+                                  <p className="text-sm">{item.content}</p>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
-
-      <RetrospectiveDialog
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        projectId={projectId}
-        retrospective={selectedRetro}
-        onSuccess={fetchRetrospectives}
-      />
-
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Retrospectiva</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir esta retrospectiva? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

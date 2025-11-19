@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import MemberSelect from "@/components/project/MemberSelect";
 
 export default function NewTask() {
   const { projectId } = useParams();
@@ -24,6 +25,7 @@ export default function NewTask() {
   const [status, setStatus] = useState<Database["public"]["Enums"]["task_status"]>("todo");
   const [estimatedHours, setEstimatedHours] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +38,8 @@ export default function NewTask() {
     try {
       setLoading(true);
       
-      const { error } = await supabase
+      // Create task
+      const { data: taskData, error: taskError } = await supabase
         .from("tasks")
         .insert([{
           title: title.trim(),
@@ -47,9 +50,25 @@ export default function NewTask() {
           created_by: user!.id,
           estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
           due_date: dueDate || null,
-        }]);
+        }])
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (taskError) throw taskError;
+
+      // Add assignees if any
+      if (assignedMembers.length > 0 && taskData) {
+        const assignees = assignedMembers.map(userId => ({
+          task_id: taskData.id,
+          user_id: userId,
+        }));
+
+        const { error: assigneesError } = await supabase
+          .from("task_assignees")
+          .insert(assignees);
+
+        if (assigneesError) throw assigneesError;
+      }
 
       toast.success("Task criada com sucesso!");
       navigate(`/projects/${projectId}`);
@@ -167,6 +186,16 @@ export default function NewTask() {
                     disabled={loading}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Atribuir a</Label>
+                <MemberSelect
+                  projectId={projectId!}
+                  selectedMembers={assignedMembers}
+                  onMembersChange={setAssignedMembers}
+                  disabled={loading}
+                />
               </div>
 
               <div className="flex gap-3 justify-end pt-4">

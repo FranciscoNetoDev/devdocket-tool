@@ -514,6 +514,18 @@ export type Database = {
         Args: { org_name: string }
         Returns: string
       }
+      create_task: {
+        Args: {
+          p_description: string
+          p_due_date?: string
+          p_estimated_hours?: number
+          p_priority: Database["public"]["Enums"]["task_priority"]
+          p_project_id: string
+          p_status: Database["public"]["Enums"]["task_status"]
+          p_title: string
+        }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

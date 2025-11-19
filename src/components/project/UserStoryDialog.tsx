@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Paperclip, MessageSquare, CheckSquare, Upload, Trash2, Send } from "lucide-react";
+import { Loader2, Paperclip, MessageSquare, CheckSquare, Upload, Trash2, Send, Download, Eye, FileText, File, Image as ImageIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -80,6 +80,7 @@ export default function UserStoryDialog({
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (story?.id) {
@@ -262,6 +263,29 @@ export default function UserStoryDialog({
     blocked: "bg-red-500",
   };
 
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) {
+      return <ImageIcon className="h-5 w-5" />;
+    }
+    if (['pdf'].includes(ext || '')) {
+      return <FileText className="h-5 w-5" />;
+    }
+    return <File className="h-5 w-5" />;
+  };
+
+  const isImageFile = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '');
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -417,6 +441,9 @@ export default function UserStoryDialog({
                   <p className="text-sm text-muted-foreground">
                     {uploading ? "Enviando..." : "Clique para enviar um arquivo"}
                   </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Suporta imagens, PDFs, documentos, etc.
+                  </p>
                 </div>
                 <Input
                   id="file-upload"
@@ -429,46 +456,91 @@ export default function UserStoryDialog({
             </div>
 
             {attachments.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">Nenhum anexo</p>
+              <div className="text-center py-12 border border-dashed rounded-lg">
+                <Paperclip className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+                <p className="text-muted-foreground font-medium">Nenhum anexo</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Envie imagens, documentos ou outros arquivos
+                </p>
+              </div>
             ) : (
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {attachments.map((attachment) => (
-                  <Card key={attachment.id}>
-                    <CardContent className="flex items-center justify-between py-3">
-                      <div className="flex items-center gap-3">
-                        <Paperclip className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <a
-                            href={attachment.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium hover:underline"
+                  <Card key={attachment.id} className="group hover:shadow-md transition-all overflow-hidden">
+                    <CardContent className="p-0">
+                      {/* Preview/Thumbnail */}
+                      <div className="relative aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                        {isImageFile(attachment.file_name) ? (
+                          <img
+                            src={attachment.file_url}
+                            alt={attachment.file_name}
+                            className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => setPreviewImage(attachment.file_url)}
+                          />
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-muted-foreground">
+                            {getFileIcon(attachment.file_name)}
+                            <span className="text-xs mt-2 font-mono">
+                              {attachment.file_name.split('.').pop()?.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Hover overlay with actions */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              if (isImageFile(attachment.file_name)) {
+                                setPreviewImage(attachment.file_url);
+                              } else {
+                                window.open(attachment.file_url, '_blank');
+                              }
+                            }}
+                            title="Visualizar"
                           >
-                            {attachment.file_name}
-                          </a>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(attachment.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
-                            {attachment.file_size && ` • ${(attachment.file_size / 1024).toFixed(2)} KB`}
-                          </p>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = attachment.file_url;
+                              link.download = attachment.file_name;
+                              link.click();
+                            }}
+                            title="Baixar"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteAttachment(attachment.id)}
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(attachment.file_url, '_blank')}
-                          title="Visualizar/Baixar"
-                        >
-                          <Paperclip className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteAttachment(attachment.id)}
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+
+                      {/* File info */}
+                      <div className="p-3">
+                        <p className="text-sm font-medium truncate" title={attachment.file_name}>
+                          {attachment.file_name}
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(attachment.created_at), "dd/MM/yy", { locale: ptBR })}
+                          </p>
+                          {attachment.file_size && (
+                            <p className="text-xs text-muted-foreground">
+                              {formatFileSize(attachment.file_size)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -518,6 +590,22 @@ export default function UserStoryDialog({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!previewImage} onOpenChange={() => setPreviewImage(null)}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Preview da Imagem</DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full">
+            <img
+              src={previewImage || ''}
+              alt="Preview"
+              className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

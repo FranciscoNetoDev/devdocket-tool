@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List, UsersRound } from "lucide-react";
+import { Loader2, Plus, FolderKanban, LogOut, User, MoreVertical, Edit, Trash2, Users, Search, SortAsc, Grid3x3, List, UsersRound, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
 import ManageMembersDialog from "@/components/project/ManageMembersDialog";
 import ProjectMemberAvatars from "@/components/project/ProjectMemberAvatars";
+import ProjectInviteDialog from "@/components/project/ProjectInviteDialog";
 
 interface Project {
   id: string;
@@ -60,6 +61,7 @@ export default function Dashboard() {
   const [profile, setProfile] = useState<any>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [managingMembersProject, setManagingMembersProject] = useState<string | null>(null);
+  const [inviteProject, setInviteProject] = useState<string | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -438,6 +440,15 @@ export default function Dashboard() {
                               <Users className="mr-2 h-4 w-4" />
                               Gerenciar Membros
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setInviteProject(project.id);
+                              }}
+                            >
+                              <Link2 className="mr-2 h-4 w-4" />
+                              Convites por Link
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -454,9 +465,15 @@ export default function Dashboard() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
+                      <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                         {project.description || "Sem descrição"}
                       </p>
+                      {project.project_members && project.project_members.length > 0 && (
+                        <div className="flex items-center gap-2 pt-3 border-t">
+                          <UsersRound className="h-3 w-3 text-muted-foreground" />
+                          <ProjectMemberAvatars members={project.project_members as any} maxDisplay={4} />
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 ) : (
@@ -521,6 +538,15 @@ export default function Dashboard() {
                               <Users className="mr-2 h-4 w-4" />
                               Gerenciar Membros
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setInviteProject(project.id);
+                              }}
+                            >
+                              <Link2 className="mr-2 h-4 w-4" />
+                              Convites por Link
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={(e) => {
@@ -558,6 +584,14 @@ export default function Dashboard() {
           projectId={managingMembersProject}
           open={!!managingMembersProject}
           onOpenChange={(open) => !open && setManagingMembersProject(null)}
+        />
+      )}
+
+      {inviteProject && (
+        <ProjectInviteDialog
+          projectId={inviteProject}
+          open={!!inviteProject}
+          onOpenChange={(open) => !open && setInviteProject(null)}
         />
       )}
 

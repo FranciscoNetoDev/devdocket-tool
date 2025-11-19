@@ -11,6 +11,7 @@ import Profile from "./pages/Profile";
 import NewProject from "./pages/NewProject";
 import Project from "./pages/Project";
 import NewTask from "./pages/NewTask";
+import AcceptInvite from "./pages/AcceptInvite";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/projects/new" element={<NewProject />} />
             <Route path="/projects/:projectId" element={<Project />} />
             <Route path="/projects/:projectId/tasks/new" element={<NewTask />} />
+            <Route path="/invite/:token" element={<AcceptInvite />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

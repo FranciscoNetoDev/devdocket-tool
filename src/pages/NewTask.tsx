@@ -27,7 +27,12 @@ export default function NewTask() {
   const [dueDate, setDueDate] = useState("");
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
   const [userStoryId, setUserStoryId] = useState<string | null>(null);
-  const [userStories, setUserStories] = useState<Array<{ id: string; title: string }>>([]);
+  const [userStories, setUserStories] = useState<Array<{ id: string; title: string; story_points: number | null }>>([]);
+  const [storyPointsInfo, setStoryPointsInfo] = useState<{
+    total: number;
+    consumed: number;
+    available: number;
+  } | null>(null);
 
   useEffect(() => {
     if (projectId) {
@@ -35,13 +40,21 @@ export default function NewTask() {
     }
   }, [projectId]);
 
+  useEffect(() => {
+    if (userStoryId) {
+      calculateStoryPoints(userStoryId);
+    } else {
+      setStoryPointsInfo(null);
+    }
+  }, [userStoryId]);
+
   const fetchUserStories = async () => {
     if (!projectId) return;
 
     try {
       const { data, error } = await supabase
         .from("user_stories")
-        .select("id, title")
+        .select("id, title, story_points")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
@@ -49,6 +62,45 @@ export default function NewTask() {
       setUserStories(data || []);
     } catch (error: any) {
       console.error("Error fetching user stories:", error);
+    }
+  };
+
+  const calculateStoryPoints = async (storyId: string) => {
+    try {
+      // Buscar a user story
+      const { data: story, error: storyError } = await supabase
+        .from("user_stories")
+        .select("story_points")
+        .eq("id", storyId)
+        .single();
+
+      if (storyError) throw storyError;
+
+      const totalPoints = story.story_points || 0;
+
+      // Buscar todas as tasks da user story
+      const { data: tasks, error: tasksError } = await supabase
+        .from("tasks")
+        .select("id, estimated_hours")
+        .eq("user_story_id", storyId)
+        .is("deleted_at", null);
+
+      if (tasksError) throw tasksError;
+
+      // Calcular pontos consumidos
+      const consumedPoints = (tasks || [])
+        .reduce((sum, t) => sum + (t.estimated_hours || 0), 0);
+
+      const availablePoints = totalPoints - consumedPoints;
+
+      setStoryPointsInfo({
+        total: totalPoints,
+        consumed: consumedPoints,
+        available: availablePoints,
+      });
+    } catch (error: any) {
+      console.error("Error calculating story points:", error);
+      setStoryPointsInfo(null);
     }
   };
 
@@ -73,6 +125,15 @@ export default function NewTask() {
     if (!userStoryId) {
       toast.error("Por favor, selecione uma User Story");
       return;
+    }
+
+    // Validar pontos disponíveis
+    if (storyPointsInfo && estimatedHours) {
+      const newHours = parseFloat(estimatedHours);
+      if (!isNaN(newHours) && newHours > storyPointsInfo.available) {
+        toast.error(`Esta user story só tem ${storyPointsInfo.available} pontos disponíveis. Você está tentando usar ${newHours} pontos.`);
+        return;
+      }
     }
 
     // Validação: projeto deve estar identificado
@@ -328,17 +389,30 @@ Hint: ${taskError.hint || 'N/A'}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="estimatedHours">Horas Estimadas</Label>
+                  <Label htmlFor="estimatedHours">Horas Estimadas (1h = 1 ponto)</Label>
                   <Input
                     id="estimatedHours"
                     type="number"
                     step="0.5"
                     min="0"
+                    max={storyPointsInfo?.available || undefined}
                     placeholder="Ex: 8"
                     value={estimatedHours}
                     onChange={(e) => setEstimatedHours(e.target.value)}
                     disabled={loading}
                   />
+                  {estimatedHours && storyPointsInfo && (
+                    <p className={`text-xs ${
+                      parseFloat(estimatedHours) > storyPointsInfo.available
+                        ? "text-destructive font-medium"
+                        : "text-muted-foreground"
+                    }`}>
+                      {parseFloat(estimatedHours) > storyPointsInfo.available
+                        ? `⚠️ Excede os pontos disponíveis (${storyPointsInfo.available} pts)`
+                        : `✓ Usará ${estimatedHours} dos ${storyPointsInfo.available} pontos disponíveis`
+                      }
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -393,11 +467,33 @@ Hint: ${taskError.hint || 'N/A'}
                       <SelectContent>
                         {userStories.map((story) => (
                           <SelectItem key={story.id} value={story.id}>
-                            {story.title}
+                            {story.title} {story.story_points ? `(${story.story_points} pts)` : "(sem pontos)"}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {storyPointsInfo && (
+                      <div className={`text-sm p-3 rounded-lg border ${
+                        storyPointsInfo.available < 0 
+                          ? "bg-destructive/10 border-destructive text-destructive" 
+                          : storyPointsInfo.available === 0
+                          ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+                          : "bg-green-50 border-green-200 text-green-800"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium">Pontos da User Story:</span>
+                          <span className="font-bold">{storyPointsInfo.total} pts total</span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1">
+                          <span>Já consumidos:</span>
+                          <span>{storyPointsInfo.consumed} pts</span>
+                        </div>
+                        <div className="flex items-center justify-between mt-1 font-semibold">
+                          <span>Disponíveis:</span>
+                          <span>{storyPointsInfo.available} pts</span>
+                        </div>
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Toda task deve estar vinculada a uma user story
                     </p>

@@ -46,11 +46,11 @@ export default function Dashboard() {
 
   const fetchProfile = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user?.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setProfile(data);

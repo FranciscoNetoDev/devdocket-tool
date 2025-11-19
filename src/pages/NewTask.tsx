@@ -96,31 +96,30 @@ export default function NewTask() {
         priority,
         status,
         project_id: projectId,
-        created_by: user.id, // Importante: define o criador como o usuário logado
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
         due_date: dueDate || null,
       };
       
-      // Cria a task no Supabase
-      const { data: taskData, error: taskError } = await supabase
-        .from("tasks")
-        .insert([taskPayload])
-        .select()
-        .single();
+      // Usa a função SECURITY DEFINER para criar a task
+      // Isso bypassa problemas de RLS mantendo todas as verificações de segurança
+      const { data: taskData, error: taskError } = await supabase.rpc('create_task', {
+        p_title: taskPayload.title,
+        p_description: taskPayload.description,
+        p_priority: taskPayload.priority,
+        p_status: taskPayload.status,
+        p_project_id: taskPayload.project_id,
+        p_estimated_hours: taskPayload.estimated_hours,
+        p_due_date: taskPayload.due_date,
+      });
 
       if (taskError) {
         console.error("❌ Erro ao criar task:", taskError);
         
-        // Tratamento de erros específicos
-        if (taskError.code === "42501") {
-          // RLS Policy violation - não deveria acontecer pois já verificamos o vínculo
-          toast.error("❌ Erro de permissão ao criar task. Entre em contato com o suporte.");
-          console.error("RLS Error details:", {
-            code: taskError.code,
-            message: taskError.message,
-            details: taskError.details,
-            hint: taskError.hint
-          });
+        // Tratamento de erros específicos da função
+        if (taskError.message?.includes('não tem permissão')) {
+          toast.error("❌ Você não tem permissão para criar tasks neste projeto.");
+        } else if (taskError.message?.includes('não autenticado')) {
+          toast.error("❌ Sessão expirada. Por favor, faça login novamente.");
         } else if (taskError.code === "23503") {
           // Foreign key violation
           toast.error("❌ Projeto não encontrado ou inválido. Tente recarregar a página.");
@@ -151,10 +150,13 @@ Hint: ${taskError.hint || 'N/A'}
         return;
       }
 
+      // Converte o resultado JSON para objeto
+      const createdTask = typeof taskData === 'string' ? JSON.parse(taskData) : taskData;
+
       // Se houver membros selecionados, atribui eles à task
-      if (assignedMembers.length > 0 && taskData) {
+      if (assignedMembers.length > 0 && createdTask) {
         const assignees = assignedMembers.map(userId => ({
-          task_id: taskData.id,
+          task_id: createdTask.id,
           user_id: userId,
         }));
 

@@ -48,7 +48,7 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("full_name, nickname, email")
         .eq("id", user?.id)
         .maybeSingle();
 
@@ -89,12 +89,12 @@ export default function Dashboard() {
     );
   }
 
-  const userInitials = profile?.name
+  const userInitials = profile?.nickname
     ?.split(" ")
     .map((n: string) => n[0])
     .join("")
     .toUpperCase()
-    .slice(0, 2) || "U";
+    .slice(0, 2) || profile?.email?.[0]?.toUpperCase() || "U";
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -124,7 +124,7 @@ export default function Dashboard() {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium">{profile?.name || "Usuário"}</p>
+                  <p className="text-sm font-medium">{profile?.nickname || profile?.full_name || "Usuário"}</p>
                   <p className="text-xs text-muted-foreground">{user.email}</p>
                 </div>
               </DropdownMenuLabel>

@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge";
 interface User {
   id: string;
   full_name: string | null;
+  nickname: string | null;
   email: string | null;
 }
 
@@ -52,8 +53,8 @@ export default function UserSelect({
       
       const { data: profiles, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
-        .order("full_name");
+        .select("id, full_name, nickname, email")
+        .order("nickname");
 
       if (error) throw error;
 
@@ -83,7 +84,7 @@ export default function UserSelect({
     if (selectedUsers.length === 0) return "Selecionar membros";
     if (selectedUsers.length === 1) {
       const user = users.find(u => u.id === selectedUsers[0]);
-      return user?.full_name || user?.email || "Membro";
+      return user?.nickname || user?.full_name || user?.email || "Membro";
     }
     return `${selectedUsers.length} membros selecionados`;
   };
@@ -111,7 +112,7 @@ export default function UserSelect({
               {users.map((user) => (
                 <CommandItem
                   key={user.id}
-                  value={user.full_name || user.email || user.id}
+                  value={user.nickname || user.full_name || user.email || user.id}
                   onSelect={() => toggleUser(user.id)}
                 >
                   <Check
@@ -122,7 +123,7 @@ export default function UserSelect({
                         : "opacity-0"
                     )}
                   />
-                  {user.full_name || user.email || "Usuário"}
+                  {user.nickname || user.full_name || user.email || "Usuário"}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -141,7 +142,7 @@ export default function UserSelect({
                 className="cursor-pointer"
                 onClick={() => !disabled && toggleUser(userId)}
               >
-                {user?.full_name || user?.email || "Usuário"}
+                {user?.nickname || user?.full_name || user?.email || "Usuário"}
                 {!disabled && " ×"}
               </Badge>
             );

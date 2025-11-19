@@ -26,6 +26,7 @@ interface Member {
   profiles: {
     id: string;
     full_name: string | null;
+    nickname: string | null;
     email: string | null;
   } | null;
 }
@@ -81,7 +82,7 @@ export default function TeamView({ projectId }: TeamViewProps) {
       const userIds = projectMembers.map(pm => pm.user_id);
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
+        .select("id, full_name, nickname, email")
         .in("id", userIds);
 
       if (profilesError) throw profilesError;
@@ -159,9 +160,10 @@ export default function TeamView({ projectId }: TeamViewProps) {
     }
   };
 
-  const getInitials = (name: string | null, email: string | null) => {
-    if (name) {
-      return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  const getInitials = (nickname: string | null, name: string | null, email: string | null) => {
+    const displayName = nickname || name;
+    if (displayName) {
+      return displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
     }
     if (email) {
       return email[0].toUpperCase();
@@ -225,14 +227,14 @@ export default function TeamView({ projectId }: TeamViewProps) {
                 <div className="flex items-center gap-3">
                   <Avatar>
                     <AvatarFallback className="bg-primary text-primary-foreground">
-                      {getInitials(member.profiles?.full_name, member.profiles?.email)}
+                      {getInitials(member.profiles?.nickname, member.profiles?.full_name, member.profiles?.email)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-medium">
-                      {member.profiles?.full_name || member.profiles?.email || "Usuário"}
+                      {member.profiles?.nickname || member.profiles?.full_name || member.profiles?.email || "Usuário"}
                     </p>
-                    {member.profiles?.email && member.profiles?.full_name && (
+                    {member.profiles?.email && (member.profiles?.nickname || member.profiles?.full_name) && (
                       <p className="text-sm text-muted-foreground">
                         {member.profiles.email}
                       </p>
@@ -269,7 +271,7 @@ export default function TeamView({ projectId }: TeamViewProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover membro</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja remover {memberToRemove?.profiles?.full_name || memberToRemove?.profiles?.email} do projeto?
+              Tem certeza que deseja remover {memberToRemove?.profiles?.nickname || memberToRemove?.profiles?.full_name || memberToRemove?.profiles?.email} do projeto?
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

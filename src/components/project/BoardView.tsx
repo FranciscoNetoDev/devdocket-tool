@@ -19,7 +19,7 @@ interface Task {
     user_id: string;
     profiles: {
       name: string;
-    };
+    } | null;
   }>;
 }
 
@@ -76,21 +76,22 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("tasks")
-        .select(`
-          *,
-          task_assignees(
-            user_id,
-            profiles:user_id(name)
-          )
-        `)
+        .select("*")
         .eq("project_id", projectId)
         .is("sprint_id", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setTasks(data || []);
+      
+      // Transform to match interface
+      const tasksWithAssignees = (data || []).map(task => ({
+        ...task,
+        task_assignees: []
+      }));
+      
+      setTasks(tasksWithAssignees);
     } catch (error: any) {
       console.error("Error fetching tasks:", error);
       toast.error("Erro ao carregar tasks");

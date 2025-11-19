@@ -70,6 +70,7 @@ export default function TaskDialog({
   const [estimatedHours, setEstimatedHours] = useState("");
   const [actualHours, setActualHours] = useState("");
   const [dueDate, setDueDate] = useState("");
+  const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
 
   useEffect(() => {
     if (taskId && open) {

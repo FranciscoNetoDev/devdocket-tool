@@ -70,6 +70,11 @@ export default function NewTask() {
       return;
     }
 
+    if (!userStoryId) {
+      toast.error("Por favor, selecione uma User Story");
+      return;
+    }
+
     // Validação: projeto deve estar identificado
     if (!projectId) {
       toast.error("Projeto não identificado. Tente voltar e acessar novamente.");
@@ -357,17 +362,17 @@ Hint: ${taskError.hint || 'N/A'}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="userStory">User Story (Opcional)</Label>
+                <Label htmlFor="userStory">User Story *</Label>
                 <Select 
-                  value={userStoryId || "none"} 
-                  onValueChange={(val) => setUserStoryId(val === "none" ? null : val)} 
+                  value={userStoryId || ""} 
+                  onValueChange={setUserStoryId} 
                   disabled={loading}
+                  required
                 >
                   <SelectTrigger id="userStory">
                     <SelectValue placeholder="Selecione uma user story" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Nenhuma</SelectItem>
                     {userStories.map((story) => (
                       <SelectItem key={story.id} value={story.id}>
                         {story.title}
@@ -375,6 +380,9 @@ Hint: ${taskError.hint || 'N/A'}
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  A task herda a vinculação à sprint através da user story
+                </p>
               </div>
 
               <div className="flex gap-3 justify-end pt-4">

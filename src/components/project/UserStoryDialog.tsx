@@ -364,15 +364,26 @@ export default function UserStoryDialog({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="story_points">Story Points</Label>
-                  <Input
-                    id="story_points"
-                    type="number"
-                    min="1"
+                  <Label htmlFor="story_points">Story Points (Fibonacci)</Label>
+                  <Select
                     value={formData.story_points}
-                    onChange={(e) => setFormData({ ...formData, story_points: e.target.value })}
-                    placeholder="1, 2, 3, 5, 8..."
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, story_points: value })}
+                  >
+                    <SelectTrigger id="story_points">
+                      <SelectValue placeholder="Selecione a complexidade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 - Muito Simples</SelectItem>
+                      <SelectItem value="2">2 - Simples</SelectItem>
+                      <SelectItem value="3">3 - Médio</SelectItem>
+                      <SelectItem value="5">5 - Complexo</SelectItem>
+                      <SelectItem value="8">8 - Muito Complexo</SelectItem>
+                      <SelectItem value="13">13 - Extremamente Complexo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Story points medem complexidade, não horas
+                  </p>
                 </div>
 
                 <div className="space-y-2">

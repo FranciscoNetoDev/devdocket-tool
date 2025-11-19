@@ -363,26 +363,44 @@ Hint: ${taskError.hint || 'N/A'}
 
               <div className="space-y-2">
                 <Label htmlFor="userStory">User Story *</Label>
-                <Select 
-                  value={userStoryId || ""} 
-                  onValueChange={setUserStoryId} 
-                  disabled={loading}
-                  required
-                >
-                  <SelectTrigger id="userStory">
-                    <SelectValue placeholder="Selecione uma user story" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {userStories.map((story) => (
-                      <SelectItem key={story.id} value={story.id}>
-                        {story.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  A task herda a vinculação à sprint através da user story
-                </p>
+                {userStories.length === 0 ? (
+                  <div className="border border-dashed rounded-lg p-4 text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma user story encontrada neste projeto
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/projects/${projectId}?view=stories`)}
+                    >
+                      Criar User Story
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Select 
+                      value={userStoryId || ""} 
+                      onValueChange={setUserStoryId} 
+                      disabled={loading}
+                      required
+                    >
+                      <SelectTrigger id="userStory" className={!userStoryId ? "border-destructive" : ""}>
+                        <SelectValue placeholder="Selecione uma user story" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {userStories.map((story) => (
+                          <SelectItem key={story.id} value={story.id}>
+                            {story.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Toda task deve estar vinculada a uma user story
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="flex gap-3 justify-end pt-4">
@@ -394,11 +412,19 @@ Hint: ${taskError.hint || 'N/A'}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button 
+                  type="submit" 
+                  disabled={loading || !userStoryId || userStories.length === 0}
+                >
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Criar Task
                 </Button>
               </div>
+              {!userStoryId && userStories.length > 0 && (
+                <p className="text-sm text-destructive text-center">
+                  Selecione uma user story para continuar
+                </p>
+              )}
             </form>
           </CardContent>
         </Card>

@@ -22,6 +22,7 @@ interface Member {
   profiles: {
     id: string;
     full_name: string | null;
+    nickname: string | null;
     email: string | null;
   } | null;
 }
@@ -68,7 +69,7 @@ export default function MemberSelect({
       const userIds = projectMembers.map(pm => pm.user_id);
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, full_name, email")
+        .select("id, full_name, nickname, email")
         .in("id", userIds);
 
       if (profilesError) throw profilesError;
@@ -99,7 +100,7 @@ export default function MemberSelect({
     if (selectedMembers.length === 0) return "Selecionar membros";
     if (selectedMembers.length === 1) {
       const member = members.find(m => m.user_id === selectedMembers[0]);
-      return member?.profiles?.full_name || member?.profiles?.email || "Membro";
+      return member?.profiles?.nickname || member?.profiles?.full_name || member?.profiles?.email || "Membro";
     }
     return `${selectedMembers.length} membros selecionados`;
   };
@@ -127,7 +128,7 @@ export default function MemberSelect({
               {members.map((member) => (
                 <CommandItem
                   key={member.user_id}
-                  value={member.profiles?.full_name || member.profiles?.email || member.user_id}
+                  value={member.profiles?.nickname || member.profiles?.full_name || member.profiles?.email || member.user_id}
                   onSelect={() => toggleMember(member.user_id)}
                 >
                   <Check
@@ -138,7 +139,7 @@ export default function MemberSelect({
                         : "opacity-0"
                     )}
                   />
-                  {member.profiles?.full_name || member.profiles?.email || "Membro"}
+                  {member.profiles?.nickname || member.profiles?.full_name || member.profiles?.email || "Membro"}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -157,7 +158,7 @@ export default function MemberSelect({
                 className="cursor-pointer"
                 onClick={() => !disabled && toggleMember(userId)}
               >
-                {member?.profiles?.full_name || member?.profiles?.email || "Membro"}
+                {member?.profiles?.nickname || member?.profiles?.full_name || member?.profiles?.email || "Membro"}
                 {!disabled && " ×"}
               </Badge>
             );

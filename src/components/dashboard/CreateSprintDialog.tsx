@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { addDays, format } from "date-fns";
 
 interface CreateSprintDialogProps {
   open: boolean;
@@ -28,6 +29,59 @@ export default function CreateSprintDialog({
     start_date: "",
     end_date: "",
   });
+
+  useEffect(() => {
+    if (open) {
+      loadLastSprintDates();
+    }
+  }, [open]);
+
+  const loadLastSprintDates = async () => {
+    try {
+      // Get user's org
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("org_id")
+        .eq("user_id", user?.id)
+        .maybeSingle();
+
+      if (!userRole?.org_id) return;
+
+      // Get last sprint ordered by end_date
+      const { data: lastSprint } = await supabase
+        .from("sprints")
+        .select("end_date")
+        .eq("org_id", userRole.org_id)
+        .order("end_date", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (lastSprint?.end_date) {
+        // Start date is the day after the last sprint ended
+        const newStartDate = addDays(new Date(lastSprint.end_date), 1);
+        // End date is 14 days (2 weeks) after start date
+        const newEndDate = addDays(newStartDate, 14);
+
+        setFormData(prev => ({
+          ...prev,
+          start_date: format(newStartDate, "yyyy-MM-dd"),
+          end_date: format(newEndDate, "yyyy-MM-dd"),
+        }));
+      } else {
+        // No previous sprint, use today as start and 14 days from today as end
+        const today = new Date();
+        const twoWeeksFromToday = addDays(today, 14);
+        
+        setFormData(prev => ({
+          ...prev,
+          start_date: format(today, "yyyy-MM-dd"),
+          end_date: format(twoWeeksFromToday, "yyyy-MM-dd"),
+        }));
+      }
+    } catch (error) {
+      console.error("Error loading last sprint:", error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,8 +125,16 @@ export default function CreateSprintDialog({
     }
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      // Reset form when closing
+      setFormData({ name: "", goal: "", start_date: "", end_date: "" });
+    }
+    onOpenChange(newOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nova Sprint</DialogTitle>
@@ -126,7 +188,7 @@ export default function CreateSprintDialog({
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>

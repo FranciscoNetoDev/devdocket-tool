@@ -26,6 +26,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Handle token expiration
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      }
+      
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        localStorage.removeItem('supabase.auth.token');
+      }
     });
 
     // Check for existing session
@@ -85,8 +96,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    try {
+      // Clear Supabase session
+      await supabase.auth.signOut();
+      
+      // Clear local state
+      setUser(null);
+      setSession(null);
+      
+      // Clear any cached data in localStorage
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Navigate to auth page
+      navigate("/auth");
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
   };
 
   return (

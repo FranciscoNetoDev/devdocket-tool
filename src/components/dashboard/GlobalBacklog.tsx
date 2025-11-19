@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronRight, ChevronDown, FolderOpen, FileText, CheckSquare } from "lucide-react";
+import { Loader2, ChevronRight, FolderOpen, FileText, CheckSquare, Package } from "lucide-react";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface Project {
   id: string;
@@ -31,36 +31,36 @@ interface Task {
   priority: string;
 }
 
-const priorityColors = {
-  low: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  medium: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-  high: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-  critical: "bg-red-500/10 text-red-500 border-red-500/20",
+const priorityConfig = {
+  low: { 
+    color: "text-blue-600 bg-blue-50 border-blue-200",
+    label: "Baixa",
+    icon: "🔵"
+  },
+  medium: { 
+    color: "text-yellow-600 bg-yellow-50 border-yellow-200",
+    label: "Média",
+    icon: "🟡"
+  },
+  high: { 
+    color: "text-orange-600 bg-orange-50 border-orange-200",
+    label: "Alta",
+    icon: "🟠"
+  },
+  critical: { 
+    color: "text-red-600 bg-red-50 border-red-200",
+    label: "Crítica",
+    icon: "🔴"
+  },
 };
 
-const statusColors = {
-  todo: "bg-muted text-muted-foreground",
-  in_progress: "bg-blue-500/10 text-blue-500",
-  done: "bg-green-500/10 text-green-500",
-  blocked: "bg-red-500/10 text-red-500",
-  draft: "bg-muted text-muted-foreground",
-  ready: "bg-blue-500/10 text-blue-500",
-};
-
-const statusLabels: Record<string, string> = {
-  todo: "A Fazer",
-  in_progress: "Em Progresso",
-  done: "Concluído",
-  blocked: "Bloqueado",
-  draft: "Rascunho",
-  ready: "Pronta",
-};
-
-const priorityLabels = {
-  low: "Baixa",
-  medium: "Média",
-  high: "Alta",
-  critical: "Crítica",
+const statusConfig: Record<string, { color: string; label: string }> = {
+  todo: { color: "bg-slate-100 text-slate-700 border-slate-200", label: "A Fazer" },
+  in_progress: { color: "bg-blue-100 text-blue-700 border-blue-200", label: "Em Progresso" },
+  done: { color: "bg-green-100 text-green-700 border-green-200", label: "Concluído" },
+  blocked: { color: "bg-red-100 text-red-700 border-red-200", label: "Bloqueado" },
+  draft: { color: "bg-slate-100 text-slate-600 border-slate-200", label: "Rascunho" },
+  ready: { color: "bg-emerald-100 text-emerald-700 border-emerald-200", label: "Pronta" },
 };
 
 export default function GlobalBacklog() {
@@ -78,7 +78,6 @@ export default function GlobalBacklog() {
     try {
       setLoading(true);
 
-      // Buscar projetos do usuário
       const { data: projectsData, error: projectsError } = await supabase
         .from("projects")
         .select("id, name, key")
@@ -91,10 +90,8 @@ export default function GlobalBacklog() {
         return;
       }
 
-      // Buscar user stories sem sprint vinculada para cada projeto
       const projectsWithData = await Promise.all(
         projectsData.map(async (project) => {
-          // Buscar user stories do projeto
           const { data: storiesData, error: storiesError } = await supabase
             .from("user_stories")
             .select("id, title, status, priority, story_points")
@@ -104,7 +101,6 @@ export default function GlobalBacklog() {
 
           if (storiesError) throw storiesError;
 
-          // Para cada user story, verificar se está vinculada a alguma sprint
           const storiesWithoutSprint = await Promise.all(
             (storiesData || []).map(async (story) => {
               const { data: sprintLink } = await supabase
@@ -113,7 +109,6 @@ export default function GlobalBacklog() {
                 .eq("user_story_id", story.id)
                 .maybeSingle();
 
-              // Se não está em sprint, buscar suas tasks
               if (!sprintLink) {
                 const { data: tasksData, error: tasksError } = await supabase
                   .from("tasks")
@@ -143,7 +138,6 @@ export default function GlobalBacklog() {
         })
       );
 
-      // Filtrar projetos que têm user stories no backlog
       const projectsWithBacklog = projectsWithData.filter((p) => p.user_stories.length > 0);
       setProjects(projectsWithBacklog);
     } catch (error: any) {
@@ -191,139 +185,166 @@ export default function GlobalBacklog() {
     return projects.reduce((total, project) => total + project.user_stories.length, 0);
   };
 
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
+      <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold">Backlog Geral</h2>
-        <p className="text-muted-foreground">
-          {projects.length} projeto(s), {getTotalStoriesCount()} user story(ies), {getTotalTasksCount()} task(s) sem sprint
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Backlog Geral</h2>
+          <p className="text-muted-foreground mt-1">
+            Visão hierárquica de todos os itens sem sprint
+          </p>
+        </div>
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" />
+                <span className="font-semibold">{projects.length}</span>
+                <span className="text-muted-foreground">projetos</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-blue-600" />
+                <span className="font-semibold">{getTotalStoriesCount()}</span>
+                <span className="text-muted-foreground">stories</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckSquare className="h-4 w-4 text-green-600" />
+                <span className="font-semibold">{getTotalTasksCount()}</span>
+                <span className="text-muted-foreground">tasks</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {projects.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">Nenhum item no backlog</p>
-            <p className="text-sm text-muted-foreground mt-2">
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Package className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-lg font-medium mb-1">Backlog vazio</p>
+            <p className="text-sm text-muted-foreground">
               Todas as user stories estão vinculadas a sprints
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {projects.map((project) => (
-            <Card key={project.id}>
+            <Card key={project.id} className="overflow-hidden border-l-4 border-l-primary hover:shadow-md transition-all">
               <Collapsible
                 open={expandedProjects.has(project.id)}
                 onOpenChange={() => toggleProject(project.id)}
               >
                 <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-start px-4 py-6 hover:bg-muted/50"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
-                      {expandedProjects.has(project.id) ? (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      )}
-                      <FolderOpen className="h-5 w-5 text-primary" />
-                      <div className="flex-1 text-left">
-                        <div className="font-semibold">{project.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {project.key} • {project.user_stories.length} user stor{project.user_stories.length === 1 ? "y" : "ies"}
+                  <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors py-4">
+                    <div className="flex items-center gap-3">
+                      <ChevronRight className={cn(
+                        "h-5 w-5 text-muted-foreground transition-transform",
+                        expandedProjects.has(project.id) && "rotate-90"
+                      )} />
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <FolderOpen className="h-5 w-5 text-primary" />
                         </div>
+                        <div className="flex-1">
+                          <CardTitle className="text-lg">{project.name}</CardTitle>
+                          <p className="text-sm text-muted-foreground mt-0.5">
+                            {project.key}
+                          </p>
+                        </div>
+                        <Badge variant="secondary" className="ml-auto">
+                          {project.user_stories.length} {project.user_stories.length === 1 ? "story" : "stories"}
+                        </Badge>
                       </div>
                     </div>
-                  </Button>
+                  </CardHeader>
                 </CollapsibleTrigger>
 
                 <CollapsibleContent>
-                  <div className="px-4 pb-4 space-y-2">
-                    {project.user_stories.map((story) => (
-                      <div key={story.id} className="ml-8">
+                  <CardContent className="pt-0 pb-4 space-y-3">
+                    {project.user_stories.map((story, idx) => (
+                      <div key={story.id} className={cn("ml-11", idx > 0 && "pt-3 border-t")}>
                         <Collapsible
                           open={expandedStories.has(story.id)}
                           onOpenChange={() => toggleStory(story.id)}
                         >
-                          <Card className="border-l-4 border-l-primary/20">
+                          <Card className="bg-gradient-to-r from-blue-50/50 to-transparent border-l-2 border-l-blue-400">
                             <CollapsibleTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                className="w-full justify-start px-4 py-4 hover:bg-muted/30"
-                              >
-                                <div className="flex items-center gap-3 flex-1">
-                                  {expandedStories.has(story.id) ? (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                  <FileText className="h-4 w-4 text-blue-500" />
-                                  <div className="flex-1 text-left">
-                                    <div className="font-medium text-sm">{story.title}</div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Badge variant="outline" className={statusColors[story.status]}>
-                                        {statusLabels[story.status] || story.status}
+                              <CardHeader className="cursor-pointer hover:bg-blue-50/50 transition-colors py-3">
+                                <div className="flex items-center gap-3">
+                                  <ChevronRight className={cn(
+                                    "h-4 w-4 text-muted-foreground transition-transform",
+                                    expandedStories.has(story.id) && "rotate-90"
+                                  )} />
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                    <span className="font-medium text-sm flex-1">{story.title}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className={cn("text-xs", statusConfig[story.status]?.color)}>
+                                      {statusConfig[story.status]?.label || story.status}
+                                    </Badge>
+                                    <Badge className={cn("text-xs border", priorityConfig[story.priority as keyof typeof priorityConfig]?.color)}>
+                                      {priorityConfig[story.priority as keyof typeof priorityConfig]?.icon}{" "}
+                                      {priorityConfig[story.priority as keyof typeof priorityConfig]?.label}
+                                    </Badge>
+                                    {story.story_points && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {story.story_points} pts
                                       </Badge>
-                                      <Badge className={priorityColors[story.priority as keyof typeof priorityColors]}>
-                                        {priorityLabels[story.priority as keyof typeof priorityLabels]}
-                                      </Badge>
-                                      {story.story_points && (
-                                        <Badge variant="outline">{story.story_points} pts</Badge>
-                                      )}
-                                      <span className="text-xs text-muted-foreground">
-                                        {story.tasks.length} task{story.tasks.length !== 1 ? "s" : ""}
-                                      </span>
-                                    </div>
+                                    )}
+                                    <Badge variant="secondary" className="text-xs">
+                                      {story.tasks.length} {story.tasks.length === 1 ? "task" : "tasks"}
+                                    </Badge>
                                   </div>
                                 </div>
-                              </Button>
+                              </CardHeader>
                             </CollapsibleTrigger>
 
                             <CollapsibleContent>
-                              <div className="px-4 pb-4 space-y-2">
+                              <CardContent className="pt-0 pb-3">
                                 {story.tasks.length === 0 ? (
-                                  <div className="ml-8 text-sm text-muted-foreground py-2">
-                                    Nenhuma task vinculada
+                                  <div className="text-sm text-muted-foreground text-center py-4 bg-muted/30 rounded-lg">
+                                    Nenhuma task vinculada a esta story
                                   </div>
                                 ) : (
-                                  story.tasks.map((task) => (
-                                    <div
-                                      key={task.id}
-                                      className="ml-8 flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
-                                    >
-                                      <CheckSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="text-sm font-medium truncate">{task.title}</div>
+                                  <div className="space-y-2">
+                                    {story.tasks.map((task) => (
+                                      <div
+                                        key={task.id}
+                                        className="flex items-center gap-3 p-3 rounded-lg bg-white border hover:border-primary/30 hover:shadow-sm transition-all"
+                                      >
+                                        <CheckSquare className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                        <span className="text-sm flex-1 font-medium">{task.title}</span>
+                                        <div className="flex items-center gap-2">
+                                          <Badge variant="outline" className={cn("text-xs", statusConfig[task.status]?.color)}>
+                                            {statusConfig[task.status]?.label || task.status}
+                                          </Badge>
+                                          <Badge className={cn("text-xs border", priorityConfig[task.priority as keyof typeof priorityConfig]?.color)}>
+                                            {priorityConfig[task.priority as keyof typeof priorityConfig]?.icon}
+                                          </Badge>
+                                        </div>
                                       </div>
-                                      <div className="flex items-center gap-2 flex-shrink-0">
-                                        <Badge variant="outline" className={statusColors[task.status]}>
-                                          {statusLabels[task.status] || task.status}
-                                        </Badge>
-                                        <Badge className={priorityColors[task.priority as keyof typeof priorityColors]}>
-                                          {priorityLabels[task.priority as keyof typeof priorityLabels]}
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                  ))
+                                    ))}
+                                  </div>
                                 )}
-                              </div>
+                              </CardContent>
                             </CollapsibleContent>
                           </Card>
                         </Collapsible>
                       </div>
                     ))}
-                  </div>
+                  </CardContent>
                 </CollapsibleContent>
               </Collapsible>
             </Card>

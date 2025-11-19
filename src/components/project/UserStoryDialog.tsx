@@ -169,42 +169,47 @@ export default function UserStoryDialog({
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !story?.id) return;
+    if (!file || !story?.id || !user?.id) return;
 
     setUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${story.id}/${fileName}`;
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${user.id}/${story.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file);
+        .from("user-story-attachments")
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
+        .from("user-story-attachments")
         .getPublicUrl(filePath);
 
       const { error: insertError } = await supabase
         .from("user_story_attachments")
-        .insert([{
+        .insert({
           user_story_id: story.id,
           file_name: file.name,
           file_url: publicUrl,
           file_size: file.size,
-          file_type: file.type,
-          uploaded_by: user?.id!,
-        }]);
+          file_type: file.type || 'application/octet-stream',
+          uploaded_by: user.id,
+        });
 
       if (insertError) throw insertError;
 
       toast.success("Anexo enviado com sucesso!");
       fetchRelatedData();
+      // Limpar o input
+      e.target.value = '';
     } catch (error: any) {
       console.error("Error uploading file:", error);
-      toast.error("Erro ao enviar anexo");
+      toast.error(error.message || "Erro ao enviar anexo");
     } finally {
       setUploading(false);
     }

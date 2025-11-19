@@ -175,18 +175,18 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
   };
 
   const calculateSprintCapacity = () => {
+    const totalHours = tasks.reduce((sum, task) => sum + (task.estimated_hours || 0), 0);
+    const usedHours = tasks.reduce((sum, task) => sum + (task.actual_hours || 0), 0);
     const startDate = new Date(sprint.start_date);
     const endDate = new Date(sprint.end_date);
     const days = differenceInDays(endDate, startDate) + 1;
-    const totalCapacity = days * 8; // 8 pontos por dia
-    const usedPoints = userStories.reduce((sum, story) => sum + (story.story_points || 0), 0);
 
     return {
       days,
-      totalCapacity,
-      usedPoints,
-      remaining: totalCapacity - usedPoints,
-      percentage: (usedPoints / totalCapacity) * 100,
+      totalCapacity: totalHours,
+      usedPoints: usedHours,
+      remaining: Math.max(0, totalHours - usedHours),
+      percentage: totalHours > 0 ? (usedHours / totalHours) * 100 : 0,
     };
   };
 
@@ -256,20 +256,20 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
                 <div className="text-sm text-muted-foreground">dias</div>
               </div>
               <div>
-                <div className="text-3xl font-bold">{capacity.totalCapacity}</div>
-                <div className="text-sm text-muted-foreground">pts total</div>
+                <div className="text-3xl font-bold">{capacity.totalCapacity.toFixed(1)}h</div>
+                <div className="text-sm text-muted-foreground">horas total</div>
               </div>
               <div>
                 <div className={`text-3xl font-bold ${capacity.usedPoints > capacity.totalCapacity ? 'text-destructive' : 'text-primary'}`}>
-                  {capacity.usedPoints}
+                  {capacity.usedPoints.toFixed(1)}h
                 </div>
-                <div className="text-sm text-muted-foreground">pts usados</div>
+                <div className="text-sm text-muted-foreground">horas usadas</div>
               </div>
               <div>
                 <div className={`text-3xl font-bold ${capacity.remaining < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                  {capacity.remaining}
+                  {capacity.remaining.toFixed(1)}h
                 </div>
-                <div className="text-sm text-muted-foreground">pts restantes</div>
+                <div className="text-sm text-muted-foreground">horas restantes</div>
               </div>
             </div>
 

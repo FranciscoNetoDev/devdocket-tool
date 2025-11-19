@@ -22,6 +22,9 @@ interface UserStory {
     name: string;
     key: string;
   };
+  tasks?: Array<{
+    estimated_hours: number | null;
+  }>;
 }
 
 interface Sprint {
@@ -89,7 +92,7 @@ export default function ManageSprintStoriesDialog({
 
       if (storiesError) throw storiesError;
 
-      // Filtrar stories que não estão em nenhuma sprint (exceto a atual)
+      // Filtrar stories que não estão em nenhuma sprint (exceto a atual) e buscar tasks
       const storiesWithSprintStatus = await Promise.all(
         (storiesData || []).map(async (story) => {
           const { data: sprintLink } = await supabase
@@ -100,7 +103,17 @@ export default function ManageSprintStoriesDialog({
 
           // Incluir se não está em sprint OU está na sprint atual
           if (!sprintLink || sprintLink.sprint_id === sprint.id) {
-            return story;
+            // Buscar tasks da story
+            const { data: tasksData } = await supabase
+              .from("tasks")
+              .select("estimated_hours")
+              .eq("user_story_id", story.id)
+              .is("deleted_at", null);
+
+            return {
+              ...story,
+              tasks: tasksData || [],
+            };
           }
           return null;
         })
@@ -140,16 +153,22 @@ export default function ManageSprintStoriesDialog({
     const days = differenceInDays(endDate, startDate) + 1;
     const totalCapacity = days * DAILY_CAPACITY;
 
-    const selectedPoints = availableStories
+    const selectedHours = availableStories
       .filter(story => selectedStories.has(story.id))
-      .reduce((sum, story) => sum + (story.story_points || 0), 0);
+      .reduce((sum, story) => {
+        const storyHours = (story.tasks || []).reduce(
+          (taskSum, task) => taskSum + (task.estimated_hours || 0),
+          0
+        );
+        return sum + storyHours;
+      }, 0);
 
     return {
       days,
       totalCapacity,
-      selectedPoints,
-      remaining: totalCapacity - selectedPoints,
-      isOverCapacity: selectedPoints > totalCapacity,
+      selectedHours,
+      remaining: totalCapacity - selectedHours,
+      isOverCapacity: selectedHours > totalCapacity,
     };
   };
 
@@ -159,7 +178,7 @@ export default function ManageSprintStoriesDialog({
 
       const capacity = calculateCapacity();
       if (capacity.isOverCapacity) {
-        toast.error(`Capacidade excedida! A sprint suporta apenas ${capacity.totalCapacity} pontos (${capacity.days} dias × ${DAILY_CAPACITY} pontos/dia)`);
+        toast.error(`Capacidade excedida! A sprint suporta apenas ${capacity.totalCapacity} horas (${capacity.days} dias × ${DAILY_CAPACITY} horas/dia)`);
         return;
       }
 
@@ -234,26 +253,26 @@ export default function ManageSprintStoriesDialog({
                 </div>
               </div>
 
-              <div className="grid grid-cols-4 gap-4 text-center">
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold">{capacity.days}</div>
+                  <div className="text-xl md:text-2xl font-bold">{capacity.days}</div>
                   <div className="text-xs text-muted-foreground">dias</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{capacity.totalCapacity}</div>
-                  <div className="text-xs text-muted-foreground">pontos total</div>
+                  <div className="text-xl md:text-2xl font-bold">{capacity.totalCapacity.toFixed(1)}h</div>
+                  <div className="text-xs text-muted-foreground">horas total</div>
                 </div>
                 <div>
-                  <div className={`text-2xl font-bold ${capacity.isOverCapacity ? 'text-destructive' : 'text-primary'}`}>
-                    {capacity.selectedPoints}
+                  <div className={`text-xl md:text-2xl font-bold ${capacity.isOverCapacity ? 'text-destructive' : 'text-primary'}`}>
+                    {capacity.selectedHours.toFixed(1)}h
                   </div>
-                  <div className="text-xs text-muted-foreground">pontos selecionados</div>
+                  <div className="text-xs text-muted-foreground">horas selecionadas</div>
                 </div>
                 <div>
-                  <div className={`text-2xl font-bold ${capacity.remaining < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                    {capacity.remaining}
+                  <div className={`text-xl md:text-2xl font-bold ${capacity.remaining < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                    {capacity.remaining.toFixed(1)}h
                   </div>
-                  <div className="text-xs text-muted-foreground">pontos restantes</div>
+                  <div className="text-xs text-muted-foreground">horas restantes</div>
                 </div>
               </div>
 
@@ -261,7 +280,7 @@ export default function ManageSprintStoriesDialog({
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    A capacidade foi excedida! Remova {Math.abs(capacity.remaining)} pontos para continuar.
+                    A capacidade foi excedida! Remova {Math.abs(capacity.remaining).toFixed(1)} horas para continuar.
                   </AlertDescription>
                 </Alert>
               )}

@@ -39,6 +39,14 @@ export default function SprintsSection() {
     fetchSprints();
   }, []);
 
+  useEffect(() => {
+    // Auto-select active sprint when sprints are loaded
+    const activeSprint = sprints.find(s => s.status === "active");
+    if (activeSprint && !selectedSprint) {
+      setSelectedSprint(activeSprint);
+    }
+  }, [sprints]);
+
   const fetchSprints = async () => {
     try {
       setLoading(true);
@@ -87,6 +95,13 @@ export default function SprintsSection() {
 
   const handleStartSprint = async (sprint: Sprint) => {
     try {
+      // Check if there's already an active sprint
+      const activeSprint = sprints.find(s => s.status === "active" && s.id !== sprint.id);
+      if (activeSprint) {
+        toast.error("Já existe uma sprint ativa. Complete ou pause-a antes de iniciar outra.");
+        return;
+      }
+
       const { error } = await supabase
         .from("sprints")
         .update({ status: "active" })
@@ -121,6 +136,13 @@ export default function SprintsSection() {
 
   const handleResumeSprint = async (sprint: Sprint) => {
     try {
+      // Check if there's already an active sprint
+      const activeSprint = sprints.find(s => s.status === "active" && s.id !== sprint.id);
+      if (activeSprint) {
+        toast.error("Já existe uma sprint ativa. Complete ou pause-a antes de retomar outra.");
+        return;
+      }
+
       const { error } = await supabase
         .from("sprints")
         .update({ status: "active" })

@@ -240,15 +240,15 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="calendar">
+      <Tabs defaultValue="stories">
         <TabsList>
-          <TabsTrigger value="calendar">
-            <CalendarDays className="mr-2 h-4 w-4" />
-            Calendário
-          </TabsTrigger>
           <TabsTrigger value="stories">
             <FileText className="mr-2 h-4 w-4" />
             User Stories ({userStories.length})
+          </TabsTrigger>
+          <TabsTrigger value="calendar">
+            <CalendarDays className="mr-2 h-4 w-4" />
+            Calendário
           </TabsTrigger>
         </TabsList>
 

@@ -9,7 +9,6 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signInWithMicrosoft: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -65,25 +64,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signInWithMicrosoft = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'azure',
-      options: {
-        redirectTo: `${window.location.origin}/dashboard`,
-        scopes: 'email',
-      },
-    });
-    
-    return { error };
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithMicrosoft, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

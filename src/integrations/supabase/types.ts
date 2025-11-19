@@ -576,7 +576,7 @@ export type Database = {
           status: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at: string
-          user_story_id: string | null
+          user_story_id: string
         }
         Insert: {
           actual_hours?: number | null
@@ -593,7 +593,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"]
           title: string
           updated_at?: string
-          user_story_id?: string | null
+          user_story_id: string
         }
         Update: {
           actual_hours?: number | null
@@ -610,7 +610,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["task_status"]
           title?: string
           updated_at?: string
-          user_story_id?: string | null
+          user_story_id?: string
         }
         Relationships: [
           {

@@ -73,8 +73,6 @@ export default function TaskDialog({
   const [actualHours, setActualHours] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
-  const [sprintId, setSprintId] = useState<string | null>(null);
-  const [sprints, setSprints] = useState<Array<{ id: string; name: string; status: string }>>([]);
   const [savingAssignees, setSavingAssignees] = useState(false);
   const [userStoryId, setUserStoryId] = useState<string | null>(null);
   const [userStories, setUserStories] = useState<Array<{ id: string; title: string }>>([]);
@@ -84,8 +82,6 @@ export default function TaskDialog({
       fetchTask();
     }
     if (open) {
-      fetchSprints();
-      
       // Solicitar permissão para notificações
       if ("Notification" in window && Notification.permission === "default") {
         Notification.requestPermission();
@@ -93,35 +89,6 @@ export default function TaskDialog({
     }
   }, [taskId, open]);
 
-  const fetchSprints = async () => {
-    // Esta função será chamada pelo useEffect mas não faz nada
-    // As sprints são buscadas por fetchSprintsForProject após carregar a task
-  };
-
-  const fetchSprintsForProject = async (projectId: string) => {
-    try {
-      // Sprints agora são globais, busca todas as sprints da org
-      const { data: userRole } = await supabase
-        .from("user_roles")
-        .select("org_id")
-        .eq("user_id", user?.id)
-        .maybeSingle();
-
-      if (!userRole?.org_id) return;
-
-      const { data, error } = await supabase
-        .from("sprints")
-        .select("id, name, status")
-        .eq("org_id", userRole.org_id)
-        .in("status", ["planning", "active", "paused"])
-        .order("start_date", { ascending: false });
-
-      if (error) throw error;
-      setSprints(data || []);
-    } catch (error: any) {
-      console.error("Error fetching sprints:", error);
-    }
-  };
 
   const fetchUserStoriesForProject = async (projectId: string) => {
     try {
@@ -159,7 +126,6 @@ export default function TaskDialog({
       setEstimatedHours(data.estimated_hours?.toString() || "");
       setActualHours(data.actual_hours?.toString() || "");
       setDueDate(data.due_date || "");
-      setSprintId(data.sprint_id || null);
       setUserStoryId((data as any).user_story_id || null);
       
       // Buscar membros atribuídos
@@ -170,8 +136,7 @@ export default function TaskDialog({
       
       setAssignedMembers(assignees?.map(a => a.user_id) || []);
       
-      // Buscar sprints e user stories após carregar a task
-      fetchSprintsForProject(data.project_id);
+      // Buscar user stories após carregar a task
       fetchUserStoriesForProject(data.project_id);
     } catch (error: any) {
       console.error("Error fetching task:", error);
@@ -200,7 +165,6 @@ export default function TaskDialog({
           estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
           actual_hours: actualHours ? parseFloat(actualHours) : null,
           due_date: dueDate || null,
-          sprint_id: sprintId,
           user_story_id: userStoryId,
         })
         .eq("id", taskId);
@@ -475,30 +439,8 @@ export default function TaskDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sprint">Sprint</Label>
-                <Select 
-                  value={sprintId || "backlog"} 
-                  onValueChange={(val) => setSprintId(val === "backlog" ? null : val)} 
-                  disabled={saving}
-                >
-                  <SelectTrigger id="sprint">
-                    <SelectValue placeholder="Selecione uma sprint" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="backlog">Backlog (Sem Sprint)</SelectItem>
-                  {sprints.map((sprint) => (
-                    <SelectItem key={sprint.id} value={sprint.id}>
-                      {sprint.name} ({sprint.status === "active" ? "Ativa" : sprint.status === "paused" ? "Pausada" : "Planejamento"})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="userStory">User Story</Label>
+              <Label htmlFor="userStory">User Story *</Label>
               <Select 
                 value={userStoryId || "none"} 
                 onValueChange={(val) => setUserStoryId(val === "none" ? null : val)} 
@@ -508,7 +450,7 @@ export default function TaskDialog({
                   <SelectValue placeholder="Selecione uma user story" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
+                  <SelectItem value="none">Selecione...</SelectItem>
                   {userStories.map((story) => (
                     <SelectItem key={story.id} value={story.id}>
                       {story.title}
@@ -516,8 +458,10 @@ export default function TaskDialog({
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                A task herda a vinculação à sprint através da user story
+              </p>
             </div>
-          </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

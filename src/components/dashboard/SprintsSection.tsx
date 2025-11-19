@@ -4,11 +4,19 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Loader2, Calendar, Target } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Loader2, Calendar, Target, MoreVertical, Play, Pause, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import CreateSprintDialog from "./CreateSprintDialog";
+import SprintDetailView from "./SprintDetailView";
 
 interface Sprint {
   id: string;
@@ -25,6 +33,7 @@ export default function SprintsSection() {
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
 
   useEffect(() => {
     fetchSprints();
@@ -76,6 +85,83 @@ export default function SprintsSection() {
     completed: "Concluída",
   };
 
+  const handleStartSprint = async (sprint: Sprint) => {
+    try {
+      const { error } = await supabase
+        .from("sprints")
+        .update({ status: "active" })
+        .eq("id", sprint.id);
+
+      if (error) throw error;
+
+      toast.success("Sprint iniciada!");
+      fetchSprints();
+    } catch (error: any) {
+      console.error("Error starting sprint:", error);
+      toast.error("Erro ao iniciar sprint");
+    }
+  };
+
+  const handlePauseSprint = async (sprint: Sprint) => {
+    try {
+      const { error } = await supabase
+        .from("sprints")
+        .update({ status: "paused" })
+        .eq("id", sprint.id);
+
+      if (error) throw error;
+
+      toast.success("Sprint pausada!");
+      fetchSprints();
+    } catch (error: any) {
+      console.error("Error pausing sprint:", error);
+      toast.error("Erro ao pausar sprint");
+    }
+  };
+
+  const handleResumeSprint = async (sprint: Sprint) => {
+    try {
+      const { error } = await supabase
+        .from("sprints")
+        .update({ status: "active" })
+        .eq("id", sprint.id);
+
+      if (error) throw error;
+
+      toast.success("Sprint retomada!");
+      fetchSprints();
+    } catch (error: any) {
+      console.error("Error resuming sprint:", error);
+      toast.error("Erro ao retomar sprint");
+    }
+  };
+
+  const handleCompleteSprint = async (sprint: Sprint) => {
+    try {
+      const { error } = await supabase
+        .from("sprints")
+        .update({ status: "completed" })
+        .eq("id", sprint.id);
+
+      if (error) throw error;
+
+      toast.success("Sprint concluída!");
+      fetchSprints();
+    } catch (error: any) {
+      console.error("Error completing sprint:", error);
+      toast.error("Erro ao concluir sprint");
+    }
+  };
+
+  if (selectedSprint) {
+    return (
+      <SprintDetailView
+        sprint={selectedSprint}
+        onBack={() => setSelectedSprint(null)}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -112,22 +198,86 @@ export default function SprintsSection() {
           {sprints.map((sprint) => {
             const daysRemaining = differenceInDays(new Date(sprint.end_date), new Date());
             return (
-              <Card key={sprint.id} className="hover:shadow-md transition-shadow cursor-pointer">
+              <Card key={sprint.id} className="hover:shadow-md transition-shadow cursor-pointer group">
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{sprint.name}</CardTitle>
-                    <Badge className={statusColors[sprint.status as keyof typeof statusColors]}>
-                      {statusLabels[sprint.status as keyof typeof statusLabels]}
-                    </Badge>
+                    <CardTitle className="text-lg" onClick={() => setSelectedSprint(sprint)}>
+                      {sprint.name}
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge className={statusColors[sprint.status as keyof typeof statusColors]}>
+                        {statusLabels[sprint.status as keyof typeof statusLabels]}
+                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {sprint.status === "planning" && (
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              handleStartSprint(sprint);
+                            }}>
+                              <Play className="mr-2 h-4 w-4" />
+                              Iniciar Sprint
+                            </DropdownMenuItem>
+                          )}
+                          {sprint.status === "active" && (
+                            <>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handlePauseSprint(sprint);
+                              }}>
+                                <Pause className="mr-2 h-4 w-4" />
+                                Pausar Sprint
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handleCompleteSprint(sprint);
+                              }}>
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Concluir Sprint
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {sprint.status === "paused" && (
+                            <>
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handleResumeSprint(sprint);
+                              }}>
+                                <Play className="mr-2 h-4 w-4" />
+                                Retomar Sprint
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={(e) => {
+                                e.stopPropagation();
+                                handleCompleteSprint(sprint);
+                              }}>
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Concluir Sprint
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </div>
                   {sprint.goal && (
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground" onClick={() => setSelectedSprint(sprint)}>
                       <Target className="h-4 w-4 mt-0.5 flex-shrink-0" />
                       <p>{sprint.goal}</p>
                     </div>
                   )}
                 </CardHeader>
-                <CardContent>
+                <CardContent onClick={() => setSelectedSprint(sprint)}>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />

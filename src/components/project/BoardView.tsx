@@ -81,6 +81,7 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
         .select("*")
         .eq("project_id", projectId)
         .is("sprint_id", null)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

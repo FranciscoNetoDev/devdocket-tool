@@ -357,6 +357,7 @@ export type Database = {
           actual_hours: number | null
           created_at: string
           created_by: string
+          deleted_at: string | null
           description: string | null
           due_date: string | null
           estimated_hours: number | null
@@ -372,6 +373,7 @@ export type Database = {
           actual_hours?: number | null
           created_at?: string
           created_by: string
+          deleted_at?: string | null
           description?: string | null
           due_date?: string | null
           estimated_hours?: number | null
@@ -387,6 +389,7 @@ export type Database = {
           actual_hours?: number | null
           created_at?: string
           created_by?: string
+          deleted_at?: string | null
           description?: string | null
           due_date?: string | null
           estimated_hours?: number | null

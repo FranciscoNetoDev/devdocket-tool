@@ -39,6 +39,7 @@ interface Task {
   due_date: string | null;
   created_by: string;
   created_at: string;
+  deleted_at: string | null;
 }
 
 interface TaskDialogProps {
@@ -146,17 +147,40 @@ export default function TaskDialog({
     try {
       const { error } = await supabase
         .from("tasks")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", taskId);
 
       if (error) throw error;
 
-      toast.success("Task deletada com sucesso!");
+      toast.success("Task inativada com sucesso!");
       onTaskUpdated?.();
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error deleting task:", error);
-      toast.error("Erro ao deletar task");
+      toast.error("Erro ao inativar task");
+    }
+  };
+
+  const handleReactivate = async () => {
+    if (!taskId) return;
+
+    try {
+      setSaving(true);
+      const { error } = await supabase
+        .from("tasks")
+        .update({ deleted_at: null })
+        .eq("id", taskId);
+
+      if (error) throw error;
+
+      toast.success("Task reativada com sucesso!");
+      onTaskUpdated?.();
+      fetchTask();
+    } catch (error: any) {
+      console.error("Error reactivating task:", error);
+      toast.error("Erro ao reativar task");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -199,7 +223,12 @@ export default function TaskDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Detalhes da Task</DialogTitle>
+            <div className="flex items-center gap-3">
+              <DialogTitle>Detalhes da Task</DialogTitle>
+              {task?.deleted_at && (
+                <Badge variant="destructive">Inativa</Badge>
+              )}
+            </div>
           </DialogHeader>
 
           <div className="space-y-6">
@@ -309,15 +338,25 @@ export default function TaskDialog({
 
             <div className="flex gap-3 justify-between pt-4">
               <div>
-                {canDelete && (
+                {task?.deleted_at ? (
                   <Button
-                    variant="destructive"
-                    onClick={() => setShowDeleteDialog(true)}
+                    variant="outline"
+                    onClick={handleReactivate}
                     disabled={saving}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Deletar
+                    Reativar Task
                   </Button>
+                ) : (
+                  canDelete && (
+                    <Button
+                      variant="destructive"
+                      onClick={() => setShowDeleteDialog(true)}
+                      disabled={saving}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Inativar
+                    </Button>
+                  )
                 )}
               </div>
               <div className="flex gap-3">
@@ -337,15 +376,15 @@ export default function TaskDialog({
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar inativação</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja deletar esta task? Esta ação não pode ser desfeita.
+              Tem certeza que deseja inativar esta task? Ela não aparecerá mais no board, mas continuará visível no backlog como inativa.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">
-              Deletar
+              Inativar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

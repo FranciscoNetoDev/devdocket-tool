@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,7 @@ const priorityLabels = {
 };
 
 export default function UserStoryView({ projectId }: UserStoryViewProps) {
+  const { user } = useAuth();
   const [stories, setStories] = useState<UserStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -127,10 +129,22 @@ export default function UserStoryView({ projectId }: UserStoryViewProps) {
 
   const fetchSprints = async () => {
     try {
+      // Get user's org
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("org_id")
+        .eq("user_id", user?.id)
+        .maybeSingle();
+
+      if (!userRole?.org_id) {
+        setSprints([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("sprints")
         .select("id, name")
-        .eq("project_id", projectId)
+        .eq("org_id", userRole.org_id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;

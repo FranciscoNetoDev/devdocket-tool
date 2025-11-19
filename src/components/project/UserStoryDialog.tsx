@@ -443,16 +443,28 @@ export default function UserStoryDialog({
                           </a>
                           <p className="text-xs text-muted-foreground">
                             {format(new Date(attachment.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                            {attachment.file_size && ` • ${(attachment.file_size / 1024).toFixed(2)} KB`}
                           </p>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteAttachment(attachment.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(attachment.file_url, '_blank')}
+                          title="Visualizar/Baixar"
+                        >
+                          <Paperclip className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteAttachment(attachment.id)}
+                          title="Excluir"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}

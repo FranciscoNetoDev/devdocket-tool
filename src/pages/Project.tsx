@@ -118,7 +118,6 @@ export default function Project() {
           <TabsList className="mb-6">
             <TabsTrigger value="board">Board</TabsTrigger>
             <TabsTrigger value="backlog">Backlog</TabsTrigger>
-            <TabsTrigger value="sprints">Sprints</TabsTrigger>
             <TabsTrigger value="team">Equipe</TabsTrigger>
             <TabsTrigger value="user-story">User Story</TabsTrigger>
             <TabsTrigger value="retrospectives">Retrospectivas</TabsTrigger>
@@ -130,10 +129,6 @@ export default function Project() {
 
           <TabsContent value="backlog" className="mt-0">
             <BacklogView projectId={projectId!} projectKey={project.key} />
-          </TabsContent>
-
-          <TabsContent value="sprints" className="mt-0">
-            <SprintsView projectId={projectId!} />
           </TabsContent>
 
           <TabsContent value="team" className="mt-0">

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Loader2, CheckSquare, FileText, Plus, Calendar, CalendarDays } from "lucide-react";
+import { ArrowLeft, Loader2, FileText, Plus, Calendar, CalendarDays } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -247,10 +247,6 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
             <FileText className="mr-2 h-4 w-4" />
             User Stories ({userStories.length})
           </TabsTrigger>
-          <TabsTrigger value="tasks">
-            <CheckSquare className="mr-2 h-4 w-4" />
-            Tasks ({tasks.length})
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-4">
@@ -259,45 +255,6 @@ export default function SprintDetailView({ sprint, onBack }: SprintDetailViewPro
             endDate={sprint.end_date}
             userStories={userStories}
           />
-        </TabsContent>
-
-        <TabsContent value="tasks" className="space-y-4">
-          {tasks.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <p className="text-muted-foreground">Nenhuma task nesta sprint</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {tasks.map((task) => (
-                <Card key={task.id}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-base">{task.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {task.projects?.key} • {task.projects?.name}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Badge className={statusColors[task.status]}>
-                          {task.status === 'todo' ? 'A Fazer' : 
-                           task.status === 'in_progress' ? 'Em Progresso' : 
-                           task.status === 'done' ? 'Concluído' : 'Bloqueado'}
-                        </Badge>
-                        <Badge className={priorityColors[task.priority]}>
-                          {task.priority === 'low' ? 'Baixa' : 
-                           task.priority === 'medium' ? 'Média' : 
-                           task.priority === 'high' ? 'Alta' : 'Crítica'}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
-            </div>
-          )}
         </TabsContent>
 
         <TabsContent value="stories" className="space-y-4">

@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, Loader2, Calendar, Target, MoreVertical, Play, Pause, CheckCircle2 } from "lucide-react";
+import { Plus, Loader2, Calendar, Target, MoreVertical, Play, Pause, CheckCircle2, ArrowLeft, ArrowRight, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -34,18 +34,11 @@ export default function SprintsSection() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
+  const [currentSprintIndex, setCurrentSprintIndex] = useState(0);
 
   useEffect(() => {
     fetchSprints();
   }, []);
-
-  useEffect(() => {
-    // Auto-select active sprint when sprints are loaded
-    const activeSprint = sprints.find(s => s.status === "active");
-    if (activeSprint && !selectedSprint) {
-      setSelectedSprint(activeSprint);
-    }
-  }, [sprints]);
 
   const fetchSprints = async () => {
     try {
@@ -175,6 +168,16 @@ export default function SprintsSection() {
     }
   };
 
+  const handleNavigateList = (direction: 'prev' | 'next') => {
+    setCurrentSprintIndex(prev => {
+      if (direction === 'next') {
+        return Math.min(prev + 1, sprints.length - 1);
+      } else {
+        return Math.max(prev - 1, 0);
+      }
+    });
+  };
+
   const handleNavigateSprint = (direction: 'prev' | 'next') => {
     if (!selectedSprint) return;
     
@@ -208,6 +211,8 @@ export default function SprintsSection() {
     );
   }
 
+  const currentSprint = sprints[currentSprintIndex];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -232,117 +237,126 @@ export default function SprintsSection() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {sprints.map((sprint) => {
-            const daysRemaining = differenceInDays(new Date(sprint.end_date), new Date());
-            return (
-              <Card 
-                key={sprint.id} 
-                className="hover:shadow-lg hover:border-primary/50 transition-all cursor-pointer group"
-                onClick={() => setSelectedSprint(sprint)}
-              >
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg group-hover:text-primary transition-colors">
-                      {sprint.name}
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Badge className={statusColors[sprint.status as keyof typeof statusColors]}>
-                        {statusLabels[sprint.status as keyof typeof statusLabels]}
-                      </Badge>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {sprint.status === "planning" && (
-                            <DropdownMenuItem onClick={(e) => {
-                              e.stopPropagation();
-                              handleStartSprint(sprint);
-                            }}>
-                              <Play className="mr-2 h-4 w-4" />
-                              Iniciar Sprint
-                            </DropdownMenuItem>
-                          )}
-                          {sprint.status === "active" && (
-                            <>
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                handlePauseSprint(sprint);
-                              }}>
-                                <Pause className="mr-2 h-4 w-4" />
-                                Pausar Sprint
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                handleCompleteSprint(sprint);
-                              }}>
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                Concluir Sprint
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          {sprint.status === "paused" && (
-                            <>
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                handleResumeSprint(sprint);
-                              }}>
-                                <Play className="mr-2 h-4 w-4" />
-                                Retomar Sprint
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={(e) => {
-                                e.stopPropagation();
-                                handleCompleteSprint(sprint);
-                              }}>
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                Concluir Sprint
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                  {sprint.goal && (
-                    <div className="flex items-start gap-2 text-sm text-muted-foreground mt-2">
-                      <Target className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <p className="line-clamp-2">{sprint.goal}</p>
-                    </div>
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>
-                        {format(new Date(sprint.start_date), "dd MMM", { locale: ptBR })} -{" "}
-                        {format(new Date(sprint.end_date), "dd MMM yyyy", { locale: ptBR })}
-                      </span>
-                    </div>
-                    {sprint.status === "active" && (
-                      <p className={`text-sm font-medium ${daysRemaining < 0 ? "text-destructive" : daysRemaining <= 3 ? "text-yellow-500" : "text-green-600"}`}>
-                        {daysRemaining < 0
-                          ? `Atrasada (${Math.abs(daysRemaining)} dias)`
-                          : daysRemaining === 0
-                          ? "Termina hoje"
-                          : `${daysRemaining} dias restantes`}
-                      </p>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleNavigateList('prev')}
+                  disabled={currentSprintIndex === 0}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <CardTitle className="text-xl">{currentSprint.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Sprint {currentSprintIndex + 1} de {sprints.length}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleNavigateList('next')}
+                  disabled={currentSprintIndex === sprints.length - 1}
+                >
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge className={statusColors[currentSprint.status as keyof typeof statusColors]}>
+                  {statusLabels[currentSprint.status as keyof typeof statusLabels]}
+                </Badge>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {currentSprint.status === "planning" && (
+                      <DropdownMenuItem onClick={() => handleStartSprint(currentSprint)}>
+                        <Play className="mr-2 h-4 w-4" />
+                        Iniciar Sprint
+                      </DropdownMenuItem>
                     )}
+                    {currentSprint.status === "active" && (
+                      <>
+                        <DropdownMenuItem onClick={() => handlePauseSprint(currentSprint)}>
+                          <Pause className="mr-2 h-4 w-4" />
+                          Pausar Sprint
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleCompleteSprint(currentSprint)}>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Concluir Sprint
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {currentSprint.status === "paused" && (
+                      <>
+                        <DropdownMenuItem onClick={() => handleResumeSprint(currentSprint)}>
+                          <Play className="mr-2 h-4 w-4" />
+                          Retomar Sprint
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleCompleteSprint(currentSprint)}>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Concluir Sprint
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {currentSprint.goal && (
+              <div className="flex items-start gap-2">
+                <Target className="h-5 w-5 text-muted-foreground mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium mb-1">Objetivo</p>
+                  <p className="text-sm text-muted-foreground">{currentSprint.goal}</p>
+                </div>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium mb-1">Período</p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(currentSprint.start_date), "dd 'de' MMMM", { locale: ptBR })} - {format(new Date(currentSprint.end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                </p>
+              </div>
+            </div>
+            {currentSprint.status === "active" && (() => {
+              const daysRemaining = differenceInDays(new Date(currentSprint.end_date), new Date());
+              return (
+                <div>
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="font-medium">Progresso</span>
+                    <span className={daysRemaining < 0 ? "text-destructive font-semibold" : "text-muted-foreground"}>
+                      {daysRemaining < 0 
+                        ? "Atrasada" 
+                        : `${daysRemaining} dias restantes`}
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })()}
+            <div className="pt-4">
+              <Button 
+                onClick={() => setSelectedSprint(currentSprint)}
+                className="w-full"
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                Ver Detalhes da Sprint
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <CreateSprintDialog

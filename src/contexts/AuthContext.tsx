@@ -20,6 +20,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Clear all Supabase auth data from storage
+  const clearAuthStorage = () => {
+    // Clear all localStorage keys related to Supabase auth
+    const keysToRemove = Object.keys(localStorage).filter(key => 
+      key.startsWith('sb-') && key.includes('-auth-token')
+    );
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Also clear any other auth-related data
+    sessionStorage.clear();
+  };
+
   useEffect(() => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -27,15 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
       
-      // Handle token expiration
+      // Handle token expiration and logout
       if (event === 'TOKEN_REFRESHED') {
         console.log('Token refreshed successfully');
       }
       
+      // Clear all auth data on sign out
       if (event === 'SIGNED_OUT') {
         setSession(null);
         setUser(null);
-        localStorage.removeItem('supabase.auth.token');
+        clearAuthStorage();
+        navigate("/auth");
       }
     });
 
@@ -104,13 +118,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       setSession(null);
       
-      // Clear any cached data in localStorage
-      localStorage.removeItem('supabase.auth.token');
+      // Clear all auth data from storage
+      clearAuthStorage();
       
       // Navigate to auth page
       navigate("/auth");
     } catch (error) {
       console.error("Error signing out:", error);
+      // Even if signOut fails, clear local data
+      setUser(null);
+      setSession(null);
+      clearAuthStorage();
+      navigate("/auth");
     }
   };
 

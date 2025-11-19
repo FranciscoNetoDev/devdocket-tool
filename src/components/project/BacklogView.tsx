@@ -106,14 +106,14 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Backlog</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold">Backlog</h2>
+          <p className="text-sm text-muted-foreground">
             {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"} no backlog
           </p>
         </div>
-        <Button onClick={() => navigate(`/projects/${projectId}/tasks/new`)}>
+        <Button onClick={() => navigate(`/projects/${projectId}/tasks/new`)} className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nova Task
         </Button>

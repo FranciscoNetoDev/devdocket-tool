@@ -12,6 +12,7 @@ import BacklogView from "@/components/project/BacklogView";
 import SprintsView from "@/components/project/SprintsView";
 import TeamView from "@/components/project/TeamView";
 import UserStoryView from "@/components/project/UserStoryView";
+import RetrospectiveView from "@/components/project/RetrospectiveView";
 
 interface Project {
   id: string;
@@ -120,6 +121,7 @@ export default function Project() {
             <TabsTrigger value="sprints">Sprints</TabsTrigger>
             <TabsTrigger value="team">Equipe</TabsTrigger>
             <TabsTrigger value="user-story">User Story</TabsTrigger>
+            <TabsTrigger value="retrospectives">Retrospectivas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="board" className="mt-0">
@@ -140,6 +142,10 @@ export default function Project() {
 
           <TabsContent value="user-story" className="mt-0">
             <UserStoryView projectId={projectId!} />
+          </TabsContent>
+
+          <TabsContent value="retrospectives" className="mt-0">
+            <RetrospectiveView projectId={projectId!} />
           </TabsContent>
         </Tabs>
       </main>

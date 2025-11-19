@@ -26,6 +26,31 @@ export default function NewTask() {
   const [estimatedHours, setEstimatedHours] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
+  const [userStoryId, setUserStoryId] = useState<string | null>(null);
+  const [userStories, setUserStories] = useState<Array<{ id: string; title: string }>>([]);
+
+  useEffect(() => {
+    if (projectId) {
+      fetchUserStories();
+    }
+  }, [projectId]);
+
+  const fetchUserStories = async () => {
+    if (!projectId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("user_stories")
+        .select("id, title")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setUserStories(data || []);
+    } catch (error: any) {
+      console.error("Error fetching user stories:", error);
+    }
+  };
 
   /**
    * Submete o formulário de criação de task
@@ -152,6 +177,18 @@ Hint: ${taskError.hint || 'N/A'}
 
       // Converte o resultado JSON para objeto
       const createdTask = typeof taskData === 'string' ? JSON.parse(taskData) : taskData;
+
+      // Se houver user story selecionada, atualiza a task
+      if (userStoryId && createdTask) {
+        const { error: storyError } = await supabase
+          .from("tasks")
+          .update({ user_story_id: userStoryId })
+          .eq("id", createdTask.id);
+
+        if (storyError) {
+          console.error("Error linking user story:", storyError);
+        }
+      }
 
       // Se houver membros selecionados, atribui eles à task
       if (assignedMembers.length > 0 && createdTask) {
@@ -317,6 +354,27 @@ Hint: ${taskError.hint || 'N/A'}
                   onMembersChange={setAssignedMembers}
                   disabled={loading}
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="userStory">User Story (Opcional)</Label>
+                <Select 
+                  value={userStoryId || "none"} 
+                  onValueChange={(val) => setUserStoryId(val === "none" ? null : val)} 
+                  disabled={loading}
+                >
+                  <SelectTrigger id="userStory">
+                    <SelectValue placeholder="Selecione uma user story" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Nenhuma</SelectItem>
+                    {userStories.map((story) => (
+                      <SelectItem key={story.id} value={story.id}>
+                        {story.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="flex gap-3 justify-end pt-4">

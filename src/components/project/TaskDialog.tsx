@@ -187,8 +187,28 @@ export default function TaskDialog({
       return;
     }
 
+    if (!userStoryId) {
+      toast.error("User Story é obrigatória - toda Task deve ser vinculada a uma User Story");
+      return;
+    }
+
     try {
       setSaving(true);
+      
+      // Se a user story está em uma sprint, verificar e vincular a task também
+      let finalSprintId = sprintId;
+      
+      if (userStoryId) {
+        const { data: sprintStory } = await supabase
+          .from("sprint_user_stories")
+          .select("sprint_id")
+          .eq("user_story_id", userStoryId)
+          .maybeSingle();
+        
+        if (sprintStory?.sprint_id) {
+          finalSprintId = sprintStory.sprint_id;
+        }
+      }
       
       const { error } = await supabase
         .from("tasks")
@@ -200,7 +220,7 @@ export default function TaskDialog({
           estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
           actual_hours: actualHours ? parseFloat(actualHours) : null,
           due_date: dueDate || null,
-          sprint_id: sprintId,
+          sprint_id: finalSprintId,
           user_story_id: userStoryId,
         })
         .eq("id", taskId);

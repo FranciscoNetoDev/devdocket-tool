@@ -232,6 +232,7 @@ export default function ManageMembersDialog({
                   disabled={addingMembers}
                   excludeCurrentUser={false}
                   currentUserId={user?.id}
+                  excludeUsers={members.map(m => m.user_id)}
                 />
                 <Button
                   onClick={handleAddMembers}

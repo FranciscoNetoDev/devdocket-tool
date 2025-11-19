@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Copy, Link as LinkIcon, Loader2, Plus, Trash2 } from "lucide-react";
+import { Copy, Link as LinkIcon, Loader2, Plus, Trash2, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -139,26 +139,28 @@ export default function ProjectInviteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Convites por Link</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-2xl">Convites por Link</DialogTitle>
+          <DialogDescription className="text-base">
             Crie links de convite para adicionar membros ao projeto
           </DialogDescription>
         </DialogHeader>
 
         {/* Create New Invite */}
-        <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Criar Novo Convite
-          </h3>
+        <div className="space-y-4 p-5 border rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Plus className="h-4 w-4 text-primary" />
+            </div>
+            <h3 className="font-semibold text-base">Criar Novo Convite</h3>
+          </div>
           
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="expiry">Expira em</Label>
+              <Label htmlFor="expiry" className="text-sm font-medium">Expira em</Label>
               <Select value={expiryDays} onValueChange={setExpiryDays}>
-                <SelectTrigger id="expiry">
+                <SelectTrigger id="expiry" className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -171,7 +173,7 @@ export default function ProjectInviteDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="max-uses">Usos máximos</Label>
+              <Label htmlFor="max-uses" className="text-sm font-medium">Usos máximos</Label>
               <Input
                 id="max-uses"
                 type="number"
@@ -179,13 +181,14 @@ export default function ProjectInviteDialog({
                 value={maxUses}
                 onChange={(e) => setMaxUses(e.target.value)}
                 min="1"
+                className="h-10"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role">Papel</Label>
+              <Label htmlFor="role" className="text-sm font-medium">Papel</Label>
               <Select value={role} onValueChange={setRole}>
-                <SelectTrigger id="role">
+                <SelectTrigger id="role" className="h-10">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -196,7 +199,7 @@ export default function ProjectInviteDialog({
             </div>
           </div>
 
-          <Button onClick={createInvite} disabled={creating} className="w-full">
+          <Button onClick={createInvite} disabled={creating} className="w-full h-10" size="lg">
             {creating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -205,26 +208,35 @@ export default function ProjectInviteDialog({
             ) : (
               <>
                 <LinkIcon className="mr-2 h-4 w-4" />
-                Gerar Link
+                Gerar Link de Convite
               </>
             )}
           </Button>
         </div>
 
         {/* Active Invites */}
-        <div className="space-y-3">
-          <h3 className="font-semibold">Convites Ativos</h3>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <LinkIcon className="h-4 w-4 text-muted-foreground" />
+            <h3 className="font-semibold text-base">Convites Ativos</h3>
+          </div>
           
           {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : invites.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Nenhum convite criado ainda
-            </p>
+            <div className="text-center py-12 px-4 border-2 border-dashed rounded-xl bg-muted/20">
+              <LinkIcon className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground font-medium">
+                Nenhum convite criado ainda
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                Crie seu primeiro link de convite acima
+              </p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {invites.map((invite) => {
                 const expired = isExpired(invite.expires_at);
                 const maxedOut = isMaxedOut(invite);
@@ -233,22 +245,37 @@ export default function ProjectInviteDialog({
                 return (
                   <div
                     key={invite.id}
-                    className={`p-3 border rounded-lg ${
-                      inactive ? "bg-muted/50 opacity-60" : "bg-background"
+                    className={`p-4 border rounded-xl transition-all ${
+                      inactive 
+                        ? "bg-muted/30 opacity-60 border-border/50" 
+                        : "bg-background hover:shadow-sm border-border"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant={inactive ? "secondary" : "default"}>
+                      <div className="flex-1 min-w-0 space-y-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge 
+                            variant={inactive ? "secondary" : "default"} 
+                            className="capitalize font-medium"
+                          >
                             {invite.role}
                           </Badge>
-                          {expired && <Badge variant="destructive">Expirado</Badge>}
-                          {maxedOut && <Badge variant="destructive">Limite atingido</Badge>}
+                          {expired && (
+                            <Badge variant="destructive" className="gap-1">
+                              <XCircle className="h-3 w-3" />
+                              Expirado
+                            </Badge>
+                          )}
+                          {maxedOut && (
+                            <Badge variant="destructive" className="gap-1">
+                              <XCircle className="h-3 w-3" />
+                              Limite atingido
+                            </Badge>
+                          )}
                         </div>
                         
-                        <div className="flex items-center gap-2 mb-1">
-                          <code className="text-xs bg-muted px-2 py-1 rounded truncate flex-1">
+                        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg border border-border/50">
+                          <code className="text-xs font-mono truncate flex-1">
                             {window.location.origin}/invite/{invite.token}
                           </code>
                           <Button
@@ -256,18 +283,26 @@ export default function ProjectInviteDialog({
                             variant="ghost"
                             onClick={() => copyInviteLink(invite.token)}
                             disabled={inactive}
+                            className="h-7 px-2 shrink-0"
                           >
-                            <Copy className="h-3 w-3" />
+                            <Copy className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                         
                         <div className="flex gap-4 text-xs text-muted-foreground">
-                          <span>
-                            Expira: {new Date(invite.expires_at).toLocaleDateString("pt-BR")}
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Expira:</span>
+                            {new Date(invite.expires_at).toLocaleDateString("pt-BR", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric"
+                            })}
                           </span>
-                          <span>
-                            Usos: {invite.use_count}
+                          <span className="flex items-center gap-1">
+                            <span className="font-medium">Usos:</span>
+                            {invite.use_count}
                             {invite.max_uses && `/${invite.max_uses}`}
+                            {!invite.max_uses && " / ∞"}
                           </span>
                         </div>
                       </div>
@@ -276,6 +311,7 @@ export default function ProjectInviteDialog({
                         size="sm"
                         variant="ghost"
                         onClick={() => deleteInvite(invite.id)}
+                        className="h-8 w-8 p-0 hover:bg-destructive/10"
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>

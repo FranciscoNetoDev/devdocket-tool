@@ -7,6 +7,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, CheckCircle2, XCircle, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
+interface InviteData {
+  id: string;
+  token: string;
+  project_id: string;
+  expires_at: string;
+  max_uses: number | null;
+  use_count: number;
+  role: string;
+  project_name: string;
+  project_key: string;
+  project_created_by: string;
+}
+
+interface AcceptInviteResult {
+  success?: boolean;
+  error?: string;
+  project_id?: string;
+}
+
 export default function AcceptInvite() {
   const { token } = useParams<{ token: string }>();
   const { user } = useAuth();
@@ -29,17 +48,16 @@ export default function AcceptInvite() {
       setLoading(true);
       setError(null);
 
-      // Fetch invite
-      const { data: inviteData, error: inviteError } = await supabase
-        .from("project_invites")
-        .select("*, projects(id, name, description)")
-        .eq("token", token)
-        .single();
+      // Use secure function to fetch invite
+      const { data, error: inviteError } = await supabase
+        .rpc("get_invite_by_token", { _token: token });
 
-      if (inviteError) {
+      if (inviteError || !data) {
         setError("Convite não encontrado");
         return;
       }
+
+      const inviteData = data as unknown as InviteData;
 
       // Check if expired
       if (new Date(inviteData.expires_at) < new Date()) {
@@ -53,8 +71,16 @@ export default function AcceptInvite() {
         return;
       }
 
-      setInvite(inviteData);
-      setProject(inviteData.projects);
+      // Transform data to match expected structure
+      setInvite({
+        ...inviteData,
+        project_id: inviteData.project_id
+      });
+      setProject({
+        id: inviteData.project_id,
+        name: inviteData.project_name,
+        key: inviteData.project_key
+      });
     } catch (error: any) {
       console.error("Error validating invite:", error);
       setError("Erro ao validar convite");
@@ -73,45 +99,30 @@ export default function AcceptInvite() {
     try {
       setAccepting(true);
 
-      // Check if already a member
-      const { data: existingMember } = await supabase
-        .from("project_members")
-        .select("id")
-        .eq("project_id", invite.project_id)
-        .eq("user_id", user.id)
-        .maybeSingle();
+      // Use secure function to accept invite
+      const { data, error } = await supabase
+        .rpc("accept_project_invite", { 
+          _token: token,
+          _user_id: user.id 
+        });
 
-      if (existingMember) {
-        toast.success("Você já é membro deste projeto!");
-        navigate(`/projects/${invite.project_id}`);
+      if (error) throw error;
+
+      const result = data as unknown as AcceptInviteResult;
+
+      if (result?.error) {
+        toast.error(result.error);
         return;
       }
 
-      // Add user as member
-      const { error: memberError } = await supabase
-        .from("project_members")
-        .insert({
-          project_id: invite.project_id,
-          user_id: user.id,
-          role: invite.role,
-        });
-
-      if (memberError) throw memberError;
-
-      // Update invite use count
-      const { error: updateError } = await supabase
-        .from("project_invites")
-        .update({ use_count: invite.use_count + 1 })
-        .eq("id", invite.id);
-
-      if (updateError) throw updateError;
-
-      setSuccess(true);
-      toast.success("Convite aceito com sucesso!");
-      
-      setTimeout(() => {
-        navigate(`/projects/${invite.project_id}`);
-      }, 2000);
+      if (result?.success) {
+        setSuccess(true);
+        toast.success("Convite aceito com sucesso!");
+        
+        setTimeout(() => {
+          navigate(`/project/${result.project_id}`);
+        }, 2000);
+      }
     } catch (error: any) {
       console.error("Error accepting invite:", error);
       toast.error("Erro ao aceitar convite");

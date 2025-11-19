@@ -99,11 +99,34 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
   const fetchTasks = async () => {
     try {
       setLoading(true);
+      
+      // Buscar sprints ativas do projeto que estão dentro do período
+      const today = new Date().toISOString().split('T')[0];
+      const { data: activeSprints, error: sprintError } = await supabase
+        .from("sprints")
+        .select("id")
+        .eq("project_id", projectId)
+        .eq("status", "active")
+        .lte("start_date", today)
+        .gte("end_date", today);
+
+      if (sprintError) throw sprintError;
+
+      // Se não houver sprint ativa no período, não mostra tasks
+      if (!activeSprints || activeSprints.length === 0) {
+        setTasks([]);
+        setLoading(false);
+        return;
+      }
+
+      const sprintIds = activeSprints.map(s => s.id);
+
+      // Buscar tasks das sprints ativas
       const { data, error } = await supabase
         .from("tasks")
         .select("*")
         .eq("project_id", projectId)
-        .is("sprint_id", null)
+        .in("sprint_id", sprintIds)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
@@ -203,6 +226,34 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Board</h2>
+            <p className="text-muted-foreground">
+              Visualize as tasks da sprint ativa
+            </p>
+          </div>
+          <Button onClick={() => navigate(`/projects/${projectId}/tasks/new`)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nova Task
+          </Button>
+        </div>
+        
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <p className="text-lg text-muted-foreground mb-2">
+            Nenhuma sprint ativa no momento
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Vá para a aba "Sprints" para iniciar uma sprint
+          </p>
+        </div>
       </div>
     );
   }

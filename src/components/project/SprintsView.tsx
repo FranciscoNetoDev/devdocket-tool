@@ -93,6 +93,20 @@ export default function SprintsView({ projectId }: SprintsViewProps) {
 
   const handleStartSprint = async (sprint: Sprint) => {
     try {
+      // Verificar se já existe sprint ativa
+      const { data: activeSprints, error: checkError } = await supabase
+        .from("sprints")
+        .select("id, name")
+        .eq("project_id", projectId)
+        .eq("status", "active");
+
+      if (checkError) throw checkError;
+
+      if (activeSprints && activeSprints.length > 0) {
+        toast.error(`Já existe uma sprint ativa: "${activeSprints[0].name}". Complete ou pause ela antes de iniciar outra.`);
+        return;
+      }
+
       const { error } = await supabase
         .from("sprints")
         .update({ status: "active" })

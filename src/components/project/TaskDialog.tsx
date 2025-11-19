@@ -75,12 +75,14 @@ export default function TaskDialog({
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
   const [savingAssignees, setSavingAssignees] = useState(false);
   const [userStoryId, setUserStoryId] = useState<string | null>(null);
-  const [userStories, setUserStories] = useState<Array<{ id: string; title: string; story_points: number | null }>>([]);
+  const [userStories, setUserStories] = useState<Array<{ id: string; title: string; story_points: number | null; due_date: string | null }>>([]);
   const [dailyPointsInfo, setDailyPointsInfo] = useState<{
     currentDayPoints: number;
     daysNeeded: number;
     distribution: Array<{ date: string; points: number }>;
   } | null>(null);
+  const [projectDueDate, setProjectDueDate] = useState<string | null>(null);
+  const [storyDueDate, setStoryDueDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (taskId && open) {
@@ -99,7 +101,7 @@ export default function TaskDialog({
     try {
       const { data, error } = await supabase
         .from("user_stories")
-        .select("id, title, story_points")
+        .select("id, title, story_points, due_date")
         .eq("project_id", projectId)
         .order("created_at", { ascending: false });
 
@@ -221,6 +223,14 @@ export default function TaskDialog({
       
       // Buscar user stories após carregar a task
       fetchUserStoriesForProject(data.project_id);
+      
+      // Buscar due_date do projeto
+      const { data: projectData } = await supabase
+        .from("projects")
+        .select("due_date")
+        .eq("id", data.project_id)
+        .single();
+      setProjectDueDate(projectData?.due_date || null);
     } catch (error: any) {
       console.error("Error fetching task:", error);
       toast.error("Erro ao carregar task");
@@ -546,7 +556,12 @@ export default function TaskDialog({
               <Label htmlFor="userStory">User Story *</Label>
               <Select 
                 value={userStoryId || "none"} 
-                onValueChange={(val) => setUserStoryId(val === "none" ? null : val)} 
+                onValueChange={(val) => {
+                  setUserStoryId(val === "none" ? null : val);
+                  // Atualizar storyDueDate quando selecionar uma story
+                  const selectedStory = userStories.find(s => s.id === val);
+                  setStoryDueDate(selectedStory?.due_date || null);
+                }} 
                 disabled={saving}
               >
                 <SelectTrigger id="userStory">
@@ -557,6 +572,7 @@ export default function TaskDialog({
                   {userStories.map((story) => (
                     <SelectItem key={story.id} value={story.id}>
                       {story.title} {story.story_points ? `(${story.story_points} pts)` : "(sem pontos)"}
+                      {story.due_date && ` - Prazo: ${new Date(story.due_date).toLocaleDateString("pt-BR")}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -605,7 +621,17 @@ export default function TaskDialog({
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 disabled={saving}
+                max={storyDueDate || projectDueDate || undefined}
               />
+              {(projectDueDate || storyDueDate) && (
+                <p className="text-xs text-muted-foreground">
+                  {storyDueDate ? (
+                    <>Prazo máximo da história: {new Date(storyDueDate).toLocaleDateString("pt-BR")}</>
+                  ) : projectDueDate ? (
+                    <>Prazo máximo do projeto: {new Date(projectDueDate).toLocaleDateString("pt-BR")}</>
+                  ) : null}
+                </p>
+              )}
               {dailyPointsInfo && dailyPointsInfo.daysNeeded > 1 && (
                 <div className="text-sm p-3 rounded-lg border bg-destructive/10 border-destructive text-destructive">
                   <p className="font-medium mb-2">🚫 Task não cabe no dia selecionado!</p>

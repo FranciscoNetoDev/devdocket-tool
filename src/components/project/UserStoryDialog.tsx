@@ -74,6 +74,7 @@ export default function UserStoryDialog({
     story_points: story?.story_points?.toString() || "",
     priority: story?.priority || "medium",
     status: story?.status || "draft",
+    due_date: (story as any)?.due_date || "",
   });
   const [tasks, setTasks] = useState<Task[]>([]);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -91,6 +92,7 @@ export default function UserStoryDialog({
         story_points: story?.story_points?.toString() || "",
         priority: story?.priority || "medium",
         status: story?.status || "draft",
+        due_date: (story as any)?.due_date || "",
       });
     }
   }, [story, open]);
@@ -151,6 +153,7 @@ export default function UserStoryDialog({
         story_points: formData.story_points ? parseInt(formData.story_points) : null,
         priority: formData.priority as "low" | "medium" | "high" | "critical",
         status: formData.status,
+        due_date: formData.due_date || null,
         project_id: projectId,
       };
 
@@ -362,34 +365,35 @@ export default function UserStoryDialog({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="story_points">Story Points (Fibonacci)</Label>
-                  <Select
-                    value={formData.story_points}
-                    onValueChange={(value) => setFormData({ ...formData, story_points: value })}
-                  >
-                    <SelectTrigger id="story_points">
-                      <SelectValue placeholder="Selecione a complexidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 - Muito Simples</SelectItem>
-                      <SelectItem value="2">2 - Simples</SelectItem>
-                      <SelectItem value="3">3 - Médio</SelectItem>
-                      <SelectItem value="5">5 - Complexo</SelectItem>
-                      <SelectItem value="8">8 - Muito Complexo</SelectItem>
-                      <SelectItem value="13">13 - Extremamente Complexo</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Story points medem complexidade, não horas
-                  </p>
-                </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="story_points">Story Points (Fibonacci)</Label>
+                    <Select
+                      value={formData.story_points}
+                      onValueChange={(value) => setFormData({ ...formData, story_points: value })}
+                    >
+                      <SelectTrigger id="story_points">
+                        <SelectValue placeholder="Selecione a complexidade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 - Muito Simples</SelectItem>
+                        <SelectItem value="2">2 - Simples</SelectItem>
+                        <SelectItem value="3">3 - Médio</SelectItem>
+                        <SelectItem value="5">5 - Complexo</SelectItem>
+                        <SelectItem value="8">8 - Muito Complexo</SelectItem>
+                        <SelectItem value="13">13 - Extremamente Complexo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Story points medem complexidade, não horas
+                    </p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="priority">Prioridade</Label>
-                  <Select
-                    value={formData.priority}
+                  <div className="space-y-2">
+                    <Label htmlFor="priority">Prioridade</Label>
+                    <Select
+                      value={formData.priority}
                     onValueChange={(value) => setFormData({ ...formData, priority: value })}
                   >
                     <SelectTrigger id="priority">
@@ -402,6 +406,20 @@ export default function UserStoryDialog({
                       <SelectItem value="critical">Crítica</SelectItem>
                     </SelectContent>
                   </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="due_date">Data de Entrega</Label>
+                  <Input
+                    id="due_date"
+                    type="date"
+                    value={formData.due_date}
+                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    As tasks desta história não poderão ter prazo maior que esta data
+                  </p>
                 </div>
               </div>
 

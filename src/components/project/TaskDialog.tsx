@@ -76,6 +76,8 @@ export default function TaskDialog({
   const [sprintId, setSprintId] = useState<string | null>(null);
   const [sprints, setSprints] = useState<Array<{ id: string; name: string; status: string }>>([]);
   const [savingAssignees, setSavingAssignees] = useState(false);
+  const [userStoryId, setUserStoryId] = useState<string | null>(null);
+  const [userStories, setUserStories] = useState<Array<{ id: string; title: string }>>([]);
 
   useEffect(() => {
     if (taskId && open) {
@@ -112,6 +114,21 @@ export default function TaskDialog({
     }
   };
 
+  const fetchUserStoriesForProject = async (projectId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("user_stories")
+        .select("id, title")
+        .eq("project_id", projectId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setUserStories(data || []);
+    } catch (error: any) {
+      console.error("Error fetching user stories:", error);
+    }
+  };
+
   const fetchTask = async () => {
     if (!taskId) return;
 
@@ -134,6 +151,7 @@ export default function TaskDialog({
       setActualHours(data.actual_hours?.toString() || "");
       setDueDate(data.due_date || "");
       setSprintId(data.sprint_id || null);
+      setUserStoryId((data as any).user_story_id || null);
       
       // Buscar membros atribuídos
       const { data: assignees } = await supabase
@@ -143,8 +161,9 @@ export default function TaskDialog({
       
       setAssignedMembers(assignees?.map(a => a.user_id) || []);
       
-      // Buscar sprints após carregar a task
+      // Buscar sprints e user stories após carregar a task
       fetchSprintsForProject(data.project_id);
+      fetchUserStoriesForProject(data.project_id);
     } catch (error: any) {
       console.error("Error fetching task:", error);
       toast.error("Erro ao carregar task");
@@ -173,6 +192,7 @@ export default function TaskDialog({
           actual_hours: actualHours ? parseFloat(actualHours) : null,
           due_date: dueDate || null,
           sprint_id: sprintId,
+          user_story_id: userStoryId,
         })
         .eq("id", taskId);
 
@@ -446,18 +466,19 @@ export default function TaskDialog({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="sprint">Sprint</Label>
-              <Select 
-                value={sprintId || "backlog"} 
-                onValueChange={(val) => setSprintId(val === "backlog" ? null : val)} 
-                disabled={saving}
-              >
-                <SelectTrigger id="sprint">
-                  <SelectValue placeholder="Selecione uma sprint" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="backlog">Backlog (Sem Sprint)</SelectItem>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sprint">Sprint</Label>
+                <Select 
+                  value={sprintId || "backlog"} 
+                  onValueChange={(val) => setSprintId(val === "backlog" ? null : val)} 
+                  disabled={saving}
+                >
+                  <SelectTrigger id="sprint">
+                    <SelectValue placeholder="Selecione uma sprint" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="backlog">Backlog (Sem Sprint)</SelectItem>
                   {sprints.map((sprint) => (
                     <SelectItem key={sprint.id} value={sprint.id}>
                       {sprint.name} ({sprint.status === "active" ? "Ativa" : sprint.status === "paused" ? "Pausada" : "Planejamento"})
@@ -466,6 +487,28 @@ export default function TaskDialog({
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="userStory">User Story</Label>
+              <Select 
+                value={userStoryId || "none"} 
+                onValueChange={(val) => setUserStoryId(val === "none" ? null : val)} 
+                disabled={saving}
+              >
+                <SelectTrigger id="userStory">
+                  <SelectValue placeholder="Selecione uma user story" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhuma</SelectItem>
+                  {userStories.map((story) => (
+                    <SelectItem key={story.id} value={story.id}>
+                      {story.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

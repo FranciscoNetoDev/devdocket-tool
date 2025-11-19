@@ -126,6 +126,7 @@ export default function NewTask() {
         priority,
         status,
         project_id: projectId,
+        user_story_id: userStoryId,
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
         due_date: dueDate || null,
       };
@@ -138,6 +139,7 @@ export default function NewTask() {
         p_priority: taskPayload.priority,
         p_status: taskPayload.status,
         p_project_id: taskPayload.project_id,
+        p_user_story_id: taskPayload.user_story_id,
         p_estimated_hours: taskPayload.estimated_hours,
         p_due_date: taskPayload.due_date,
       });

@@ -302,7 +302,7 @@ export default function AcceptInvite() {
                   type="button"
                   variant="link"
                   className="p-0 h-auto"
-                  onClick={() => navigate("/auth", { state: { returnTo: `/i/${token}` } })}
+                  onClick={() => navigate(`/auth?redirect=/i/${token}`)}
                 >
                   Criar conta
                 </Button>

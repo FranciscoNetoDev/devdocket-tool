@@ -118,6 +118,9 @@ export default function MemberSelect({
     return `${selectedMembers.length} membros selecionados`;
   };
 
+  // Filtra membros já selecionados da lista de opções
+  const availableMembers = members.filter(m => !selectedMembers.includes(m.user_id));
+
   return (
     <div className="space-y-2">
       <Popover open={open} onOpenChange={setOpen}>
@@ -138,7 +141,7 @@ export default function MemberSelect({
             <CommandInput placeholder="Buscar membro..." />
             <CommandEmpty>Nenhum membro encontrado.</CommandEmpty>
             <CommandGroup>
-              {members.map((member) => (
+              {availableMembers.map((member) => (
                 <CommandItem
                   key={member.user_id}
                   value={member.profiles?.nickname || member.profiles?.full_name || member.profiles?.email || member.user_id}

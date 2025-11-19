@@ -77,6 +77,9 @@ export default function UserSelect({
     }
   };
 
+  // Filtra usuários já selecionados da lista de opções
+  const availableUsers = users.filter(u => !selectedUsers.includes(u.id));
+
   const toggleUser = (userId: string) => {
     if (selectedUsers.includes(userId)) {
       onUsersChange(selectedUsers.filter(id => id !== userId));
@@ -114,7 +117,7 @@ export default function UserSelect({
             <CommandInput placeholder="Buscar usuário..." />
             <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
             <CommandGroup>
-              {users.map((user) => (
+              {availableUsers.map((user) => (
                 <CommandItem
                   key={user.id}
                   value={user.nickname || user.full_name || user.email || user.id}

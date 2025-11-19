@@ -175,18 +175,23 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
   };
 
   const calculateSprintCapacity = () => {
-    const totalHours = tasks.reduce((sum, task) => sum + (task.estimated_hours || 0), 0);
-    const usedHours = tasks.reduce((sum, task) => sum + (task.actual_hours || 0), 0);
     const startDate = new Date(sprint.start_date);
     const endDate = new Date(sprint.end_date);
+    const today = new Date();
     const days = differenceInDays(endDate, startDate) + 1;
+    const totalCapacity = days * 8; // 8 horas por dia
+    const allocatedHours = tasks.reduce((sum, task) => sum + (task.estimated_hours || 0), 0);
+    const actualHours = tasks.reduce((sum, task) => sum + (task.actual_hours || 0), 0);
+    const daysRemaining = Math.max(0, differenceInDays(endDate, today));
 
     return {
       days,
-      totalCapacity: totalHours,
-      usedPoints: usedHours,
-      remaining: Math.max(0, totalHours - usedHours),
-      percentage: totalHours > 0 ? (usedHours / totalHours) * 100 : 0,
+      totalCapacity,
+      allocatedHours,
+      actualHours,
+      available: Math.max(0, totalCapacity - allocatedHours),
+      daysRemaining,
+      percentage: totalCapacity > 0 ? (allocatedHours / totalCapacity) * 100 : 0,
     };
   };
 
@@ -241,7 +246,7 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
       </div>
 
       {/* Capacity Card */}
-      <Card className={capacity.usedPoints > capacity.totalCapacity ? "border-destructive" : "border-primary"}>
+      <Card className={capacity.allocatedHours > capacity.totalCapacity ? "border-destructive" : "border-primary"}>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -250,26 +255,32 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-4 gap-4 text-center">
+            <div className="grid grid-cols-5 gap-4 text-center">
               <div>
                 <div className="text-3xl font-bold">{capacity.days}</div>
-                <div className="text-sm text-muted-foreground">dias</div>
+                <div className="text-sm text-muted-foreground">dias totais</div>
               </div>
               <div>
-                <div className="text-3xl font-bold">{capacity.totalCapacity.toFixed(1)}h</div>
+                <div className="text-3xl font-bold">{capacity.totalCapacity}h</div>
                 <div className="text-sm text-muted-foreground">horas total</div>
               </div>
               <div>
-                <div className={`text-3xl font-bold ${capacity.usedPoints > capacity.totalCapacity ? 'text-destructive' : 'text-primary'}`}>
-                  {capacity.usedPoints.toFixed(1)}h
+                <div className={`text-3xl font-bold ${capacity.allocatedHours > capacity.totalCapacity ? 'text-destructive' : 'text-primary'}`}>
+                  {capacity.allocatedHours.toFixed(1)}h
                 </div>
-                <div className="text-sm text-muted-foreground">horas usadas</div>
+                <div className="text-sm text-muted-foreground">horas alocadas</div>
               </div>
               <div>
-                <div className={`text-3xl font-bold ${capacity.remaining < 0 ? 'text-destructive' : 'text-green-600'}`}>
-                  {capacity.remaining.toFixed(1)}h
+                <div className={`text-3xl font-bold ${capacity.available < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                  {capacity.available.toFixed(1)}h
                 </div>
-                <div className="text-sm text-muted-foreground">horas restantes</div>
+                <div className="text-sm text-muted-foreground">horas disponíveis</div>
+              </div>
+              <div>
+                <div className={`text-3xl font-bold ${capacity.daysRemaining === 0 ? 'text-orange-600' : 'text-blue-600'}`}>
+                  {capacity.daysRemaining}
+                </div>
+                <div className="text-sm text-muted-foreground">dias restantes</div>
               </div>
             </div>
 
@@ -281,7 +292,7 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
                   {capacity.percentage.toFixed(1)}%
                 </span>
               </div>
-              <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className={`h-full transition-all ${
                     capacity.percentage > 100 ? "bg-destructive" : "bg-primary"
@@ -289,10 +300,13 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
                   style={{ width: `${Math.min(capacity.percentage, 100)}%` }}
                 />
               </div>
-              <div className="text-xs text-muted-foreground text-center">
-                Média de {capacity.totalCapacity / capacity.days} pontos por dia
-              </div>
             </div>
+
+            {capacity.allocatedHours > capacity.totalCapacity && (
+              <div className="text-sm text-destructive font-medium">
+                ⚠️ Capacidade excedida em {(capacity.allocatedHours - capacity.totalCapacity).toFixed(1)} horas
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

@@ -151,7 +151,7 @@ export default function ManageSprintStoriesDialog({
     const startDate = new Date(sprint.start_date);
     const endDate = new Date(sprint.end_date);
     const days = differenceInDays(endDate, startDate) + 1;
-    const totalCapacity = days * DAILY_CAPACITY;
+    const totalCapacity = days * DAILY_CAPACITY; // horas baseadas nos dias
 
     const selectedHours = availableStories
       .filter(story => selectedStories.has(story.id))

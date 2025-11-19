@@ -16,6 +16,7 @@ interface Task {
   priority: string;
   estimated_hours: number | null;
   due_date: string | null;
+  deleted_at: string | null;
   task_assignees: Array<{
     user_id: string;
     profiles: {
@@ -133,7 +134,9 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
           {tasks.map((task) => (
             <Card
               key={task.id}
-              className="hover:shadow-md transition-all cursor-pointer"
+              className={`hover:shadow-md transition-all cursor-pointer ${
+                task.deleted_at ? "opacity-60" : ""
+              }`}
               onClick={() => handleTaskClick(task.id)}
             >
               <CardContent className="p-4">
@@ -149,7 +152,14 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-medium mb-1">{task.title}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-medium">{task.title}</h3>
+                          {task.deleted_at && (
+                            <Badge variant="destructive" className="text-xs">
+                              Inativa
+                            </Badge>
+                          )}
+                        </div>
                         {task.description && (
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {task.description}

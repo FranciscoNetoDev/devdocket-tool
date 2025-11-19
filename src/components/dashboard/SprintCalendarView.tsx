@@ -11,6 +11,8 @@ interface Task {
   status: string;
   priority: string;
   due_date: string | null;
+  estimated_hours: number | null;
+  actual_hours: number | null;
 }
 
 interface UserStory {
@@ -56,18 +58,18 @@ export default function SprintCalendarView({
     return grouped;
   }, [tasks]);
 
-  const totalPoints = userStories.reduce(
-    (sum, story) => sum + (story.story_points || 0),
+  const totalHours = tasks.reduce(
+    (sum, task) => sum + (task.estimated_hours || 0),
     0
   );
 
   const workDays = days.filter((day) => !isWeekend(day));
-  const avgPointsPerDay = workDays.length > 0 ? totalPoints / workDays.length : 0;
+  const avgHoursPerDay = workDays.length > 0 ? totalHours / workDays.length : 0;
 
   const getDayUtilization = (dayIndex: number) => {
-    // Distribuição simples: pontos médios por dia útil
+    // Distribuição simples: horas médias por dia útil
     if (isWeekend(days[dayIndex])) return 0;
-    return avgPointsPerDay;
+    return avgHoursPerDay;
   };
 
   const priorityColors: Record<string, string> = {
@@ -111,7 +113,7 @@ export default function SprintCalendarView({
           <CardContent>
             <div className="text-2xl font-bold">{userStories.length}</div>
             <p className="text-xs text-muted-foreground">
-              {totalPoints} pontos
+              {totalHours.toFixed(1)} horas
             </p>
           </CardContent>
         </Card>

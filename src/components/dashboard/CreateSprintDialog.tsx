@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { addDays, format } from "date-fns";
+import { addDays, format, differenceInDays, startOfDay } from "date-fns";
 
 interface CreateSprintDialogProps {
   open: boolean;
@@ -23,6 +24,7 @@ export default function CreateSprintDialog({
 }: CreateSprintDialogProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [duration, setDuration] = useState<"7" | "14">("14");
   const [formData, setFormData] = useState({
     name: "",
     goal: "",
@@ -58,9 +60,16 @@ export default function CreateSprintDialog({
 
       if (lastSprint?.end_date) {
         // Start date is the day after the last sprint ended
-        const newStartDate = addDays(new Date(lastSprint.end_date), 1);
-        // End date is 14 days (2 weeks) after start date
-        const newEndDate = addDays(newStartDate, 14);
+        const lastEndDate = new Date(lastSprint.end_date);
+        const today = startOfDay(new Date());
+        
+        // If last sprint ended in the past, start from today
+        const newStartDate = lastEndDate < today 
+          ? today 
+          : addDays(lastEndDate, 1);
+        
+        // End date is 14 days (2 weeks) after start date by default
+        const newEndDate = addDays(newStartDate, parseInt(duration));
 
         setFormData(prev => ({
           ...prev,
@@ -68,14 +77,14 @@ export default function CreateSprintDialog({
           end_date: format(newEndDate, "yyyy-MM-dd"),
         }));
       } else {
-        // No previous sprint, use today as start and 14 days from today as end
-        const today = new Date();
-        const twoWeeksFromToday = addDays(today, 14);
+        // No previous sprint, use today as start
+        const today = startOfDay(new Date());
+        const endDate = addDays(today, parseInt(duration));
         
         setFormData(prev => ({
           ...prev,
           start_date: format(today, "yyyy-MM-dd"),
-          end_date: format(twoWeeksFromToday, "yyyy-MM-dd"),
+          end_date: format(endDate, "yyyy-MM-dd"),
         }));
       }
     } catch (error) {
@@ -88,6 +97,26 @@ export default function CreateSprintDialog({
     setLoading(true);
 
     try {
+      // Validations
+      const startDate = new Date(formData.start_date);
+      const endDate = new Date(formData.end_date);
+      const today = startOfDay(new Date());
+      
+      // Check if start date is not in the past
+      if (startDate < today) {
+        toast.error("Não é possível criar sprints com data de início no passado");
+        setLoading(false);
+        return;
+      }
+      
+      // Check if duration is 7 or 14 days
+      const daysDiff = differenceInDays(endDate, startDate);
+      if (daysDiff !== 7 && daysDiff !== 14) {
+        toast.error("A duração da sprint deve ser de 1 ou 2 semanas (7 ou 14 dias)");
+        setLoading(false);
+        return;
+      }
+
       // Get user's org
       const { data: userRole } = await supabase
         .from("user_roles")
@@ -163,6 +192,32 @@ export default function CreateSprintDialog({
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="duration">Duração *</Label>
+            <Select 
+              value={duration} 
+              onValueChange={(value: "7" | "14") => {
+                setDuration(value);
+                if (formData.start_date) {
+                  const startDate = new Date(formData.start_date);
+                  const newEndDate = addDays(startDate, parseInt(value));
+                  setFormData(prev => ({
+                    ...prev,
+                    end_date: format(newEndDate, "yyyy-MM-dd")
+                  }));
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a duração" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">1 semana (7 dias)</SelectItem>
+                <SelectItem value="14">2 semanas (14 dias)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start_date">Data Início *</Label>
@@ -170,7 +225,16 @@ export default function CreateSprintDialog({
                 id="start_date"
                 type="date"
                 value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                min={format(new Date(), "yyyy-MM-dd")}
+                onChange={(e) => {
+                  const newStartDate = new Date(e.target.value);
+                  const newEndDate = addDays(newStartDate, parseInt(duration));
+                  setFormData({ 
+                    ...formData, 
+                    start_date: e.target.value,
+                    end_date: format(newEndDate, "yyyy-MM-dd")
+                  });
+                }}
                 required
               />
             </div>
@@ -181,9 +245,13 @@ export default function CreateSprintDialog({
                 id="end_date"
                 type="date"
                 value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                readOnly
+                className="bg-muted cursor-not-allowed"
                 required
               />
+              <p className="text-xs text-muted-foreground">
+                Calculada automaticamente baseada na duração
+              </p>
             </div>
           </div>
 

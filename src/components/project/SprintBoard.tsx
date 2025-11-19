@@ -3,10 +3,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle2, Clock, AlertCircle, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import DroppableColumn from "./DroppableColumn";
+import AddTasksToSprintDialog from "./AddTasksToSprintDialog";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type TaskStatus = Database["public"]["Enums"]["task_status"];
 
@@ -45,6 +56,8 @@ interface SprintBoardProps {
 export default function SprintBoard({ sprint, projectId, onBack }: SprintBoardProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addTasksDialogOpen, setAddTasksDialogOpen] = useState(false);
+  const [taskToRemove, setTaskToRemove] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSprintTasks();
@@ -102,6 +115,24 @@ export default function SprintBoard({ sprint, projectId, onBack }: SprintBoardPr
   const handleTaskClick = (taskId: string) => {
     // TODO: Abrir dialog com detalhes da task
     console.log("Task clicked:", taskId);
+  };
+
+  const handleRemoveFromSprint = async (taskId: string) => {
+    try {
+      const { error } = await supabase
+        .from("tasks")
+        .update({ sprint_id: null })
+        .eq("id", taskId);
+
+      if (error) throw error;
+
+      setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
+      toast.success("Task removida da sprint");
+      setTaskToRemove(null);
+    } catch (error: any) {
+      console.error("Error removing task from sprint:", error);
+      toast.error("Erro ao remover task da sprint");
+    }
   };
 
   const getTasksByStatus = (status: TaskStatus) => {
@@ -208,6 +239,7 @@ export default function SprintBoard({ sprint, projectId, onBack }: SprintBoardPr
           color="bg-slate-100 dark:bg-slate-800"
           tasks={todoTasks}
           onTaskClick={handleTaskClick}
+          onRemoveTask={(taskId) => setTaskToRemove(taskId)}
         />
 
         <DroppableColumn
@@ -216,6 +248,7 @@ export default function SprintBoard({ sprint, projectId, onBack }: SprintBoardPr
           color="bg-blue-100 dark:bg-blue-900/30"
           tasks={inProgressTasks}
           onTaskClick={handleTaskClick}
+          onRemoveTask={(taskId) => setTaskToRemove(taskId)}
         />
 
         <DroppableColumn
@@ -224,8 +257,35 @@ export default function SprintBoard({ sprint, projectId, onBack }: SprintBoardPr
           color="bg-green-100 dark:bg-green-900/30"
           tasks={doneTasks}
           onTaskClick={handleTaskClick}
+          onRemoveTask={(taskId) => setTaskToRemove(taskId)}
         />
       </div>
+
+      {/* Dialogs */}
+      <AddTasksToSprintDialog
+        open={addTasksDialogOpen}
+        onOpenChange={setAddTasksDialogOpen}
+        sprintId={sprint.id}
+        projectId={projectId}
+        onSuccess={fetchSprintTasks}
+      />
+
+      <AlertDialog open={!!taskToRemove} onOpenChange={() => setTaskToRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover task da sprint</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover esta task da sprint? Ela será movida de volta para o backlog.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => taskToRemove && handleRemoveFromSprint(taskToRemove)}>
+              Remover
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

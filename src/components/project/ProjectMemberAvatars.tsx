@@ -1,16 +1,17 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface Member {
   user_id: string;
   profiles?: {
     full_name: string | null;
     nickname: string | null;
+    avatar_url: string | null;
   };
 }
 
@@ -48,6 +49,9 @@ export default function ProjectMemberAvatars({ members, maxDisplay = 3 }: Projec
                 className="h-8 w-8 border-2 border-background cursor-pointer hover:z-50 transition-transform hover:scale-110"
                 style={{ zIndex: displayMembers.length - index }}
               >
+                {member.profiles?.avatar_url && (
+                  <AvatarImage src={member.profiles.avatar_url} alt={getDisplayName(member)} />
+                )}
                 <AvatarFallback className="text-xs bg-primary/10 text-primary">
                   {getInitials(member)}
                 </AvatarFallback>

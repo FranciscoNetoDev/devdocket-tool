@@ -32,7 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import EditProjectDialog from "@/components/project/EditProjectDialog";
 import ManageMembersDialog from "@/components/project/ManageMembersDialog";
@@ -84,7 +84,7 @@ export default function Dashboard() {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, nickname, email")
+        .select("full_name, nickname, email, avatar_url")
         .eq("id", user?.id)
         .maybeSingle();
 
@@ -133,8 +133,16 @@ export default function Dashboard() {
 
           const { data: profiles, error: profilesError } = await supabase
             .from("profiles")
-            .select("id, full_name, nickname")
-            .in("id", memberIds);
+            .select("id, full_name, nickname, avatar_url")
+            .in("id", memberIds) as { 
+              data: Array<{ 
+                id: string; 
+                full_name: string | null; 
+                nickname: string | null; 
+                avatar_url: string | null 
+              }> | null; 
+              error: any 
+            };
 
           if (profilesError) {
             console.error("Error fetching profiles:", profilesError);
@@ -142,10 +150,24 @@ export default function Dashboard() {
           }
 
           // Combina os dados
-          const membersWithProfiles = members.map(member => ({
-            user_id: member.user_id,
-            profiles: profiles?.find(p => p.id === member.user_id)
-          }));
+          const membersWithProfiles: Array<{
+            user_id: string;
+            profiles?: {
+              full_name: string | null;
+              nickname: string | null;
+              avatar_url: string | null;
+            };
+          }> = members.map(member => {
+            const profile = profiles?.find(p => p.id === member.user_id);
+            return {
+              user_id: member.user_id,
+              profiles: profile ? {
+                full_name: profile.full_name,
+                nickname: profile.nickname,
+                avatar_url: profile.avatar_url || null
+              } : undefined
+            };
+          });
 
           return {
             ...project,
@@ -468,7 +490,7 @@ export default function Dashboard() {
                               {project.project_members && project.project_members.length > 0 && (
                                 <div className="flex items-center gap-2">
                                   <UsersRound className="h-3 w-3 text-muted-foreground" />
-                                  <ProjectMemberAvatars members={project.project_members} maxDisplay={3} />
+                                  <ProjectMemberAvatars members={project.project_members as any} maxDisplay={3} />
                                 </div>
                               )}
                             </div>

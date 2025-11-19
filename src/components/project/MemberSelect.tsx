@@ -50,20 +50,36 @@ export default function MemberSelect({
   const fetchMembers = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch project members
+      const { data: projectMembers, error: membersError } = await supabase
         .from("project_members")
-        .select(`
-          user_id,
-          profiles (
-            id,
-            full_name,
-            email
-          )
-        `)
+        .select("user_id")
         .eq("project_id", projectId);
 
-      if (error) throw error;
-      setMembers(data || []);
+      if (membersError) throw membersError;
+      
+      if (!projectMembers || projectMembers.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      // Fetch profiles for those user IDs
+      const userIds = projectMembers.map(pm => pm.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const combinedData = projectMembers.map(pm => ({
+        user_id: pm.user_id,
+        profiles: profiles?.find(p => p.id === pm.user_id) || null
+      }));
+
+      setMembers(combinedData);
     } catch (error) {
       console.error("Error fetching members:", error);
     } finally {

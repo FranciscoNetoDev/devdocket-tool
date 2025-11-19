@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -52,6 +53,7 @@ const statusLabels = {
 };
 
 export default function BacklogView({ projectId, projectKey }: BacklogViewProps) {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -111,7 +113,7 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
             {tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"} no backlog
           </p>
         </div>
-        <Button>
+        <Button onClick={() => navigate(`/projects/${projectId}/tasks/new`)}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Task
         </Button>
@@ -123,7 +125,7 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
             <p className="text-muted-foreground mb-4">
               Nenhuma task no backlog ainda
             </p>
-            <Button>
+            <Button onClick={() => navigate(`/projects/${projectId}/tasks/new`)}>
               <Plus className="mr-2 h-4 w-4" />
               Criar Primeira Task
             </Button>

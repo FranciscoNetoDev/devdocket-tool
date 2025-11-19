@@ -203,7 +203,7 @@ Hint: ${taskError.hint || 'N/A'}
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
-      <header className="border-b bg-card shadow-soft">
+      <header className="border-b bg-card shadow-soft sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <Button
             variant="ghost"

@@ -83,6 +83,11 @@ export default function TaskDialog({
     }
     if (open) {
       fetchSprints();
+      
+      // Solicitar permissão para notificações
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
     }
   }, [taskId, open]);
 
@@ -187,6 +192,28 @@ export default function TaskDialog({
     }
   };
 
+  const sendBrowserNotification = (assigneeName: string) => {
+    // Check if browser supports notifications
+    if (!("Notification" in window)) {
+      console.log("This browser does not support notifications");
+      return;
+    }
+
+    // Request permission if not granted
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    // Send notification if permission granted
+    if (Notification.permission === "granted") {
+      new Notification("Nova Task Atribuída", {
+        body: `${assigneeName} foi atribuído à task: ${title}`,
+        icon: "/favicon.ico",
+        tag: taskId || "task-assignment",
+      });
+    }
+  };
+
   const handleUpdateAssignees = async () => {
     if (!taskId || !task) return;
 
@@ -235,8 +262,21 @@ export default function TaskDialog({
 
         if (insertError) throw insertError;
 
-        // Enviar emails para novos assignees
+        // Buscar perfis dos novos assignees
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, nickname")
+          .in("id", newAssignees);
+
+        // Enviar notificações para novos assignees
         for (const userId of newAssignees) {
+          const profile = profiles?.find(p => p.id === userId);
+          const assigneeName = profile?.nickname || profile?.full_name || "Usuário";
+
+          // Enviar notificação do navegador
+          sendBrowserNotification(assigneeName);
+
+          // Enviar email
           try {
             await supabase.functions.invoke("send-task-assignment-email", {
               body: {

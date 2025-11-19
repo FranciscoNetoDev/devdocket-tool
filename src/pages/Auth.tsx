@@ -14,7 +14,7 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signUp, signIn, user } = useAuth();
+  const { signUp, signIn, signInWithMicrosoft, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,6 +49,21 @@ export default function Auth() {
           toast.success("Conta criada com sucesso!");
           navigate("/dashboard");
         }
+      }
+    } catch (error: any) {
+      toast.error("Ocorreu um erro. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMicrosoftLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithMicrosoft();
+      if (error) {
+        toast.error("Erro ao fazer login com Microsoft");
+        console.error(error);
       }
     } catch (error: any) {
       toast.error("Ocorreu um erro. Tente novamente.");
@@ -125,6 +140,36 @@ export default function Auth() {
                 {isLogin ? "Entrar" : "Criar conta"}
               </Button>
             </form>
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">ou</span>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleMicrosoftLogin}
+              disabled={loading}
+            >
+              <svg
+                className="mr-2 h-5 w-5"
+                viewBox="0 0 23 23"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M0 0h11v11H0V0z" fill="#F25022" />
+                <path d="M12 0h11v11H12V0z" fill="#7FBA00" />
+                <path d="M0 12h11v11H0V12z" fill="#00A4EF" />
+                <path d="M12 12h11v11H12V12z" fill="#FFB900" />
+              </svg>
+              Entrar com Microsoft
+            </Button>
 
             <div className="mt-4 text-center text-sm">
               <button

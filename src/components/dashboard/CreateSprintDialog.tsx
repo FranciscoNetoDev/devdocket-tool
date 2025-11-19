@@ -38,6 +38,18 @@ export default function CreateSprintDialog({
     }
   }, [open]);
 
+  // Recalculate end_date when duration changes
+  useEffect(() => {
+    if (formData.start_date) {
+      const startDate = new Date(formData.start_date);
+      const newEndDate = addDays(startDate, parseInt(duration));
+      setFormData(prev => ({
+        ...prev,
+        end_date: format(newEndDate, "yyyy-MM-dd"),
+      }));
+    }
+  }, [duration]);
+
   const loadLastSprintDates = async () => {
     try {
       // Get user's org
@@ -196,17 +208,7 @@ export default function CreateSprintDialog({
             <Label htmlFor="duration">Duração *</Label>
             <Select 
               value={duration} 
-              onValueChange={(value: "7" | "14") => {
-                setDuration(value);
-                if (formData.start_date) {
-                  const startDate = new Date(formData.start_date);
-                  const newEndDate = addDays(startDate, parseInt(value));
-                  setFormData(prev => ({
-                    ...prev,
-                    end_date: format(newEndDate, "yyyy-MM-dd")
-                  }));
-                }
-              }}
+              onValueChange={(value: "7" | "14") => setDuration(value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione a duração" />

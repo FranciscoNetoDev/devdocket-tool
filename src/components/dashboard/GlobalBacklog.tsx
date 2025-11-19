@@ -22,6 +22,7 @@ interface UserStory {
   priority: string;
   story_points: number | null;
   tasks: Task[];
+  sprint?: { name: string } | null;
 }
 
 interface Task {
@@ -101,39 +102,35 @@ export default function GlobalBacklog() {
 
           if (storiesError) throw storiesError;
 
-          const storiesWithoutSprint = await Promise.all(
+          const storiesWithData = await Promise.all(
             (storiesData || []).map(async (story) => {
               const { data: sprintLink } = await supabase
                 .from("sprint_user_stories")
-                .select("id")
+                .select("sprint_id, sprints:sprint_id(name)")
                 .eq("user_story_id", story.id)
                 .maybeSingle();
 
-              if (!sprintLink) {
-                const { data: tasksData, error: tasksError } = await supabase
-                  .from("tasks")
-                  .select("id, title, status, priority")
-                  .eq("user_story_id", story.id)
-                  .is("deleted_at", null)
-                  .order("status")
-                  .order("priority", { ascending: false });
+              const { data: tasksData, error: tasksError } = await supabase
+                .from("tasks")
+                .select("id, title, status, priority")
+                .eq("user_story_id", story.id)
+                .is("deleted_at", null)
+                .order("status")
+                .order("priority", { ascending: false });
 
-                if (tasksError) throw tasksError;
+              if (tasksError) throw tasksError;
 
-                return {
-                  ...story,
-                  tasks: tasksData || [],
-                };
-              }
-              return null;
+              return {
+                ...story,
+                tasks: tasksData || [],
+                sprint: sprintLink ? (sprintLink.sprints as any) : null,
+              };
             })
           );
 
-          const filteredStories = storiesWithoutSprint.filter((s) => s !== null) as UserStory[];
-
           return {
             ...project,
-            user_stories: filteredStories,
+            user_stories: storiesWithData,
           };
         })
       );
@@ -231,9 +228,9 @@ export default function GlobalBacklog() {
             <div className="rounded-full bg-muted p-4 mb-4">
               <Package className="h-8 w-8 text-muted-foreground" />
             </div>
-            <p className="text-lg font-medium mb-1">Backlog vazio</p>
+            <p className="text-lg font-medium mb-1">Nenhuma user story encontrada</p>
             <p className="text-sm text-muted-foreground">
-              Todas as user stories estão vinculadas a sprints
+              Crie user stories nos seus projetos para visualizá-las aqui
             </p>
           </CardContent>
         </Card>
@@ -301,6 +298,11 @@ export default function GlobalBacklog() {
                                     {story.story_points && (
                                       <Badge variant="outline" className="text-xs">
                                         {story.story_points} pts
+                                      </Badge>
+                                    )}
+                                    {story.sprint && (
+                                      <Badge variant="default" className="text-xs bg-purple-600 hover:bg-purple-700">
+                                        📌 {story.sprint.name}
                                       </Badge>
                                     )}
                                     <Badge variant="secondary" className="text-xs">

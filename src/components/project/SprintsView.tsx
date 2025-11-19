@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, Plus, Calendar, Target, MoreVertical, Pencil, Trash2, Play, CheckCircle2 } from "lucide-react";
+import { Loader2, Plus, Calendar, Target, MoreVertical, Pencil, Trash2, Play, CheckCircle2, Pause, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import CreateSprintDialog from "./CreateSprintDialog";
 import EditSprintDialog from "./EditSprintDialog";
@@ -122,6 +122,54 @@ export default function SprintsView({ projectId }: SprintsViewProps) {
     }
   };
 
+  const handlePauseSprint = async (sprint: Sprint) => {
+    try {
+      const { error } = await supabase
+        .from("sprints")
+        .update({ status: "paused" })
+        .eq("id", sprint.id);
+
+      if (error) throw error;
+
+      toast.success("Sprint pausada!");
+      fetchSprints();
+    } catch (error: any) {
+      console.error("Error pausing sprint:", error);
+      toast.error("Erro ao pausar sprint");
+    }
+  };
+
+  const handleResumeSprint = async (sprint: Sprint) => {
+    try {
+      // Verificar se já existe sprint ativa
+      const { data: activeSprints, error: checkError } = await supabase
+        .from("sprints")
+        .select("id, name")
+        .eq("project_id", projectId)
+        .eq("status", "active");
+
+      if (checkError) throw checkError;
+
+      if (activeSprints && activeSprints.length > 0) {
+        toast.error(`Já existe uma sprint ativa: "${activeSprints[0].name}". Complete ou pause ela antes de retomar outra.`);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("sprints")
+        .update({ status: "active" })
+        .eq("id", sprint.id);
+
+      if (error) throw error;
+
+      toast.success("Sprint retomada!");
+      fetchSprints();
+    } catch (error: any) {
+      console.error("Error resuming sprint:", error);
+      toast.error("Erro ao retomar sprint");
+    }
+  };
+
   const handleCompleteSprint = async (sprint: Sprint) => {
     try {
       const { error } = await supabase
@@ -145,6 +193,8 @@ export default function SprintsView({ projectId }: SprintsViewProps) {
         return "bg-green-500";
       case "planning":
         return "bg-blue-500";
+      case "paused":
+        return "bg-orange-500";
       case "completed":
         return "bg-slate-500";
       default:
@@ -158,11 +208,37 @@ export default function SprintsView({ projectId }: SprintsViewProps) {
         return "Ativo";
       case "planning":
         return "Planejamento";
+      case "paused":
+        return "Pausado";
       case "completed":
         return "Concluído";
       default:
         return status;
     }
+  };
+
+  const getDaysRemaining = (endDate: string) => {
+    const today = new Date();
+    const end = new Date(endDate);
+    const diffTime = end.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const getSprintWarning = (sprint: Sprint) => {
+    if (sprint.status !== "active") return null;
+    
+    const daysRemaining = getDaysRemaining(sprint.end_date);
+    
+    if (daysRemaining < 0) {
+      return { text: "Sprint atrasada!", color: "text-red-500" };
+    } else if (daysRemaining <= 2) {
+      return { text: `${daysRemaining} ${daysRemaining === 1 ? "dia restante" : "dias restantes"}!`, color: "text-orange-500" };
+    } else if (daysRemaining <= 5) {
+      return { text: `${daysRemaining} dias restantes`, color: "text-yellow-500" };
+    }
+    
+    return null;
   };
 
   if (viewingSprint) {
@@ -252,6 +328,32 @@ export default function SprintsView({ projectId }: SprintsViewProps) {
                           <>
                             <DropdownMenuItem onClick={(e) => {
                               e.stopPropagation();
+                              handlePauseSprint(sprint);
+                            }}>
+                              <Pause className="mr-2 h-4 w-4" />
+                              Pausar Sprint
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              handleCompleteSprint(sprint);
+                            }}>
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              Concluir Sprint
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                          </>
+                        )}
+                        {sprint.status === "paused" && (
+                          <>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
+                              handleResumeSprint(sprint);
+                            }}>
+                              <Play className="mr-2 h-4 w-4" />
+                              Retomar Sprint
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={(e) => {
+                              e.stopPropagation();
                               handleCompleteSprint(sprint);
                             }}>
                               <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -289,10 +391,18 @@ export default function SprintsView({ projectId }: SprintsViewProps) {
                 )}
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Calendar className="w-4 h-4" />
-                  {new Date(sprint.start_date).toLocaleDateString("pt-BR")} -{" "}
-                  {new Date(sprint.end_date).toLocaleDateString("pt-BR")}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="w-4 h-4" />
+                    {new Date(sprint.start_date).toLocaleDateString("pt-BR")} -{" "}
+                    {new Date(sprint.end_date).toLocaleDateString("pt-BR")}
+                  </div>
+                  {getSprintWarning(sprint) && (
+                    <div className={`flex items-center gap-2 text-sm font-medium ${getSprintWarning(sprint)?.color}`}>
+                      <AlertTriangle className="w-4 h-4" />
+                      {getSprintWarning(sprint)?.text}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

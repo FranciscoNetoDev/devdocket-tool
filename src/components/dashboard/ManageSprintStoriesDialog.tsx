@@ -116,7 +116,13 @@ export default function ManageSprintStoriesDialog({
     }
   };
 
-  const toggleStory = (storyId: string) => {
+  const toggleStory = (storyId: string, storyStatus: string) => {
+    // Só permite adicionar stories com status "ready"
+    if (storyStatus !== "ready" && !selectedStories.has(storyId)) {
+      toast.error("Apenas user stories com status 'Pronta' podem ser vinculadas à sprint");
+      return;
+    }
+    
     setSelectedStories((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(storyId)) {
@@ -276,44 +282,61 @@ export default function ManageSprintStoriesDialog({
             </div>
           ) : (
             <div className="space-y-2">
-              {availableStories.map((story) => (
-                <Card
-                  key={story.id}
-                  className={`cursor-pointer transition-all ${
-                    selectedStories.has(story.id)
-                      ? "border-primary bg-primary/5"
-                      : "hover:border-primary/50"
-                  }`}
-                  onClick={() => toggleStory(story.id)}
-                >
-                  <CardContent className="py-3">
-                    <div className="flex items-center gap-3">
-                      <Checkbox
-                        checked={selectedStories.has(story.id)}
-                        onCheckedChange={() => toggleStory(story.id)}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{story.title}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {story.projects.name} ({story.projects.key})
+              {availableStories.map((story) => {
+                const isReady = story.status === "ready";
+                const isSelected = selectedStories.has(story.id);
+                const canSelect = isReady || isSelected;
+                
+                return (
+                  <Card
+                    key={story.id}
+                    className={`transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/5"
+                        : canSelect
+                        ? "cursor-pointer hover:border-primary/50"
+                        : "opacity-50 cursor-not-allowed bg-muted/30"
+                    }`}
+                    onClick={() => canSelect && toggleStory(story.id, story.status)}
+                  >
+                    <CardContent className="py-3">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={isSelected}
+                          disabled={!canSelect}
+                          onCheckedChange={() => canSelect && toggleStory(story.id, story.status)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{story.title}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {story.projects.name} ({story.projects.key})
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={isReady ? "default" : "secondary"} className={isReady ? "bg-emerald-600" : "bg-slate-400"}>
+                            {isReady ? "✓ Pronta" : story.status === "draft" ? "Rascunho" : "Em progresso"}
+                          </Badge>
+                          <Badge className={priorityConfig[story.priority as keyof typeof priorityConfig]?.color}>
+                            {priorityConfig[story.priority as keyof typeof priorityConfig]?.label}
+                          </Badge>
+                          {story.story_points && (
+                            <Badge variant="outline" className="font-bold">
+                              {story.story_points} pts
+                            </Badge>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={priorityConfig[story.priority as keyof typeof priorityConfig]?.color}>
-                          {priorityConfig[story.priority as keyof typeof priorityConfig]?.label}
-                        </Badge>
-                        {story.story_points && (
-                          <Badge variant="outline" className="font-bold">
-                            {story.story_points} pts
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      {!canSelect && (
+                        <div className="mt-2 text-xs text-muted-foreground italic ml-9">
+                          Apenas user stories com status "Pronta" podem ser vinculadas
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

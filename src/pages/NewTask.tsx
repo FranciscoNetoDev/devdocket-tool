@@ -31,9 +31,10 @@ export default function NewTask() {
    * Submete o formulário de criação de task
    * Fluxo:
    * 1. Validação dos campos obrigatórios (título, projeto, usuário)
-   * 2. Criação da task no banco via Supabase
-   * 3. Atribuição de membros à task (se houver)
-   * 4. Redirecionamento para a página do projeto
+   * 2. Verificação se usuário está vinculado ao projeto
+   * 3. Criação da task no banco via Supabase
+   * 4. Atribuição de membros à task (se houver)
+   * 5. Redirecionamento para a página do projeto
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +60,35 @@ export default function NewTask() {
     try {
       setLoading(true);
       
+      // VERIFICAÇÃO PRÉVIA: Checa se o usuário está vinculado ao projeto
+      const { data: membershipCheck, error: membershipError } = await supabase
+        .from("project_members")
+        .select("id")
+        .eq("project_id", projectId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      // Também verifica se é o criador do projeto
+      const { data: projectCheck, error: projectError } = await supabase
+        .from("projects")
+        .select("id, created_by")
+        .eq("id", projectId)
+        .maybeSingle();
+      
+      if (membershipError || projectError) {
+        console.error("Erro ao verificar vínculo:", { membershipError, projectError });
+        toast.error("Erro ao verificar suas permissões no projeto");
+        return;
+      }
+      
+      const isMember = membershipCheck !== null;
+      const isCreator = projectCheck?.created_by === user.id;
+      
+      if (!isMember && !isCreator) {
+        toast.error("❌ Você não está vinculado a este projeto. Solicite ao administrador para adicionar você como membro.");
+        return;
+      }
+      
       // Monta o payload da task com os dados do formulário
       const taskPayload = {
         title: title.trim(),
@@ -79,17 +109,44 @@ export default function NewTask() {
         .single();
 
       if (taskError) {
-        console.error("Error creating task:", taskError);
+        console.error("❌ Erro ao criar task:", taskError);
         
-        // Tratamento de erros com mensagens amigáveis
+        // Tratamento de erros específicos
         if (taskError.code === "42501") {
-          toast.error("Você não tem permissão para criar tasks neste projeto. Verifique se você é membro do projeto.");
+          // RLS Policy violation - não deveria acontecer pois já verificamos o vínculo
+          toast.error("❌ Erro de permissão ao criar task. Entre em contato com o suporte.");
+          console.error("RLS Error details:", {
+            code: taskError.code,
+            message: taskError.message,
+            details: taskError.details,
+            hint: taskError.hint
+          });
         } else if (taskError.code === "23503") {
-          toast.error("Projeto não encontrado ou inválido. Tente recarregar a página.");
-        } else if (taskError.message.includes("permission")) {
-          toast.error("Você não tem permissão para realizar esta ação.");
+          // Foreign key violation
+          toast.error("❌ Projeto não encontrado ou inválido. Tente recarregar a página.");
+        } else if (taskError.code === "23505") {
+          // Unique constraint violation
+          toast.error("❌ Já existe uma task com essas características.");
         } else {
-          toast.error(`Erro ao criar task: ${taskError.message || "Erro desconhecido"}`);
+          // Erro genérico - mostra a exception completa
+          const errorDetails = `
+Código: ${taskError.code || 'N/A'}
+Mensagem: ${taskError.message || 'Erro desconhecido'}
+Detalhes: ${taskError.details || 'N/A'}
+Hint: ${taskError.hint || 'N/A'}
+          `.trim();
+          
+          toast.error(
+            <div className="space-y-2">
+              <div className="font-semibold">❌ Erro ao criar task:</div>
+              <pre className="text-xs bg-destructive/10 p-2 rounded overflow-auto max-h-32">
+                {errorDetails}
+              </pre>
+            </div>,
+            { duration: 8000 }
+          );
+          
+          console.error("Exception completa:", taskError);
         }
         return;
       }
@@ -116,8 +173,27 @@ export default function NewTask() {
       toast.success("✅ Task criada com sucesso!");
       navigate(`/projects/${projectId}`);
     } catch (error: any) {
-      console.error("Unexpected error creating task:", error);
-      toast.error("Ocorreu um erro inesperado. Por favor, tente novamente ou contate o suporte.");
+      // Captura qualquer erro não tratado e mostra a exception completa
+      console.error("❌ Erro inesperado ao criar task:", error);
+      
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : typeof error === 'string' 
+        ? error 
+        : JSON.stringify(error, null, 2);
+      
+      toast.error(
+        <div className="space-y-2">
+          <div className="font-semibold">❌ Erro inesperado:</div>
+          <pre className="text-xs bg-destructive/10 p-2 rounded overflow-auto max-h-32">
+            {errorMessage}
+          </pre>
+          <div className="text-xs opacity-70">
+            Verifique o console do navegador para mais detalhes
+          </div>
+        </div>,
+        { duration: 10000 }
+      );
     } finally {
       setLoading(false);
     }

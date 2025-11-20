@@ -38,17 +38,17 @@ export default function CreateSprintDialog({
     }
   }, [open]);
 
-  // Recalculate end_date when duration changes
+  // Recalculate end_date when duration or start_date changes
   useEffect(() => {
     if (formData.start_date) {
-      const startDate = new Date(formData.start_date);
+      const startDate = startOfDay(new Date(formData.start_date));
       const newEndDate = addDays(startDate, parseInt(duration));
       setFormData(prev => ({
         ...prev,
         end_date: format(newEndDate, "yyyy-MM-dd"),
       }));
     }
-  }, [duration]);
+  }, [duration, formData.start_date]);
 
   const loadLastSprintDates = async () => {
     try {
@@ -191,12 +191,9 @@ export default function CreateSprintDialog({
                 value={formData.start_date}
                 min={format(new Date(), "yyyy-MM-dd")}
                 onChange={(e) => {
-                  const newStartDate = new Date(e.target.value);
-                  const newEndDate = addDays(newStartDate, parseInt(duration));
                   setFormData({ 
                     ...formData, 
-                    start_date: e.target.value,
-                    end_date: format(newEndDate, "yyyy-MM-dd")
+                    start_date: e.target.value
                   });
                 }}
                 required

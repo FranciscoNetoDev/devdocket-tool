@@ -52,13 +52,13 @@ export default function CreateSprintDialog({
 
   const loadLastSprintDates = async () => {
     try {
-      // Always start from tomorrow (today + 1 day)
-      const tomorrow = addDays(startOfDay(new Date()), 1);
-      const endDate = addDays(tomorrow, parseInt(duration));
+      // Start from today
+      const today = startOfDay(new Date());
+      const endDate = addDays(today, parseInt(duration));
       
       setFormData(prev => ({
         ...prev,
-        start_date: format(tomorrow, "yyyy-MM-dd"),
+        start_date: format(today, "yyyy-MM-dd"),
         end_date: format(endDate, "yyyy-MM-dd"),
       }));
     } catch (error) {
@@ -74,11 +74,11 @@ export default function CreateSprintDialog({
       // Validations
       const startDate = startOfDay(new Date(formData.start_date));
       const endDate = startOfDay(new Date(formData.end_date));
-      const tomorrow = addDays(startOfDay(new Date()), 1);
+      const today = startOfDay(new Date());
       
-      // Check if start date is at least tomorrow
-      if (startDate < tomorrow) {
-        toast.error("A data de início deve ser a partir de amanhã");
+      // Check if start date is not in the past (today or future is OK)
+      if (startDate < today) {
+        toast.error("A data de início não pode ser retroativa");
         setLoading(false);
         return;
       }
@@ -189,7 +189,7 @@ export default function CreateSprintDialog({
                 id="start_date"
                 type="date"
                 value={formData.start_date}
-                min={format(addDays(new Date(), 1), "yyyy-MM-dd")}
+                min={format(new Date(), "yyyy-MM-dd")}
                 onChange={(e) => {
                   const newStartDate = new Date(e.target.value);
                   const newEndDate = addDays(newStartDate, parseInt(duration));

@@ -71,19 +71,18 @@ export default function CreateSprintDialog({
     setLoading(true);
 
     try {
-      // Validations
-      const startDate = startOfDay(new Date(formData.start_date));
-      const endDate = startOfDay(new Date(formData.end_date));
-      const today = startOfDay(new Date());
+      // Validations - compare dates as strings to avoid timezone issues
+      const todayStr = format(new Date(), "yyyy-MM-dd");
       
       // Check if start date is in the past (before today)
-      if (startDate < today) {
+      if (formData.start_date < todayStr) {
         toast.error("A data de início não pode ser retroativa");
         setLoading(false);
         return;
       }
       
       // Validate that end_date matches the expected calculation
+      const startDate = startOfDay(new Date(formData.start_date));
       const expectedEndDate = addDays(startDate, parseInt(duration));
       const expectedEndDateStr = format(expectedEndDate, "yyyy-MM-dd");
       

@@ -76,17 +76,19 @@ export default function CreateSprintDialog({
       const endDate = startOfDay(new Date(formData.end_date));
       const today = startOfDay(new Date());
       
-      // Check if start date is not in the past (today or future is OK)
+      // Check if start date is in the past (before today)
       if (startDate < today) {
         toast.error("A data de início não pode ser retroativa");
         setLoading(false);
         return;
       }
       
-      // Check if duration is 7 or 14 days
-      const daysDiff = differenceInDays(endDate, startDate);
-      if (daysDiff !== 7 && daysDiff !== 14) {
-        toast.error(`A duração da sprint deve ser de 1 ou 2 semanas (7 ou 14 dias). Duração atual: ${daysDiff} dias`);
+      // Validate that end_date matches the expected calculation
+      const expectedEndDate = addDays(startDate, parseInt(duration));
+      const expectedEndDateStr = format(expectedEndDate, "yyyy-MM-dd");
+      
+      if (formData.end_date !== expectedEndDateStr) {
+        toast.error(`Erro na duração da sprint. Por favor, tente novamente.`);
         setLoading(false);
         return;
       }

@@ -189,47 +189,18 @@ export default function SprintCalendarView({
                   } ${isOverCapacity ? "border-destructive" : ""}`}
                 >
                   <CardContent className="p-2 space-y-1.5 min-h-[100px] flex flex-col">
-                    <div className="flex justify-between items-center gap-1">
+                    <div className="flex justify-between items-center">
                       <span className="text-sm font-semibold">
                         {format(day, "d")}
                       </span>
-                      {!isWeekendDay && (
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] px-1 py-0 h-4 whitespace-nowrap ${
-                            isOverCapacity ? "border-destructive text-destructive" : ""
-                          }`}
-                        >
-                          {utilization.toFixed(1)}h
-                        </Badge>
-                      )}
-                    </div>
-
-                    <div className="text-[10px] text-muted-foreground">
-                      {format(day, "MMM", { locale: ptBR })}
-                    </div>
-
-                    {!isWeekendDay && (
-                      <div className="space-y-0.5">
-                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all ${
-                              isOverCapacity ? "bg-destructive" : "bg-primary"
-                            }`}
-                            style={{
-                              width: `${Math.min(utilizationPercent, 100)}%`,
-                            }}
-                          />
-                        </div>
-                        <div className="text-[10px] text-center text-muted-foreground">
-                          {utilizationPercent.toFixed(0)}%
-                        </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {format(day, "MMM", { locale: ptBR })}
                       </div>
-                    )}
+                    </div>
 
                     {/* Tasks do dia */}
                     {dayTasks.length > 0 && (
-                      <div className="space-y-1 mt-auto">
+                      <div className="space-y-1 flex-1">
                         {dayTasks.slice(0, 2).map((task) => (
                           <div
                             key={task.id}
@@ -245,9 +216,38 @@ export default function SprintCalendarView({
                         ))}
                         {dayTasks.length > 2 && (
                           <div className="text-[10px] text-center text-muted-foreground">
-                            +{dayTasks.length - 2} tarefas
+                            +{dayTasks.length - 2}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* Footer com horas e utilização */}
+                    {!isWeekendDay && (
+                      <div className="space-y-1 mt-auto pt-1 border-t">
+                        <div className="flex items-center justify-between gap-2">
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] px-1.5 py-0 h-4 whitespace-nowrap ${
+                              isOverCapacity ? "border-destructive text-destructive" : ""
+                            }`}
+                          >
+                            {utilization.toFixed(1)}h
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">
+                            {utilizationPercent.toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${
+                              isOverCapacity ? "bg-destructive" : "bg-primary"
+                            }`}
+                            style={{
+                              width: `${Math.min(utilizationPercent, 100)}%`,
+                            }}
+                          />
+                        </div>
                       </div>
                     )}
                   </CardContent>

@@ -615,7 +615,19 @@ export default function Dashboard() {
       </TabsContent>
 
       <TabsContent value="sprints">
-        <SprintsSection />
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">Sprints</h3>
+              <p className="text-sm text-muted-foreground">Gerencie suas sprints</p>
+            </div>
+            <Button variant="outline" onClick={() => navigate("/sprints")} size="sm">
+              <ListTodo className="mr-2 h-4 w-4" />
+              Ver Todas as Sprints
+            </Button>
+          </div>
+          <SprintsSection />
+        </div>
       </TabsContent>
 
       <TabsContent value="backlog">

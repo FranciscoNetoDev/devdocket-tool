@@ -13,6 +13,7 @@ import NewProject from "./pages/NewProject";
 import Project from "./pages/Project";
 import NewTask from "./pages/NewTask";
 import AcceptInvite from "./pages/AcceptInvite";
+import Sprints from "./pages/Sprints";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/sprints" element={<Sprints />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/projects/new" element={<NewProject />} />
             <Route 

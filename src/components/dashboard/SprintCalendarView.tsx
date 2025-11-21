@@ -232,7 +232,7 @@ export default function SprintCalendarView({
                               isOverCapacity ? "border-destructive text-destructive" : ""
                             }`}
                           >
-                            {utilization.toFixed(1)}h ({utilizationPercent.toFixed(0)}%)
+                            {utilization.toFixed(1)}h
                           </Badge>
                         </div>
                         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">

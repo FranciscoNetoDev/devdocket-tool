@@ -139,9 +139,9 @@ export default function SprintCalendarView({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workDays.length * DAILY_CAPACITY}</div>
+            <div className="text-2xl font-bold">{workDays.length * DAILY_CAPACITY}h</div>
             <p className="text-xs text-muted-foreground">
-              {DAILY_CAPACITY} pts/dia útil
+              {DAILY_CAPACITY}h/dia útil
             </p>
           </CardContent>
         </Card>
@@ -200,7 +200,7 @@ export default function SprintCalendarView({
                             isOverCapacity ? "border-destructive text-destructive" : ""
                           }`}
                         >
-                          {utilization.toFixed(1)}
+                          {utilization.toFixed(1)}h
                         </Badge>
                       )}
                     </div>

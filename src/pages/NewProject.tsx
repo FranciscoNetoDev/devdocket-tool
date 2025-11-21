@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { projectSchema } from "@/utils/validationSchemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,19 +51,10 @@ export default function NewProject() {
       return;
     }
 
-    // Validação básica
-    if (!formData.name.trim()) {
-      toast.error("O nome do projeto é obrigatório");
-      return;
-    }
-
-    if (!formData.key.trim()) {
-      toast.error("A chave do projeto é obrigatória");
-      return;
-    }
-
-    if (formData.key.length < 2 || formData.key.length > 10) {
-      toast.error("A chave deve ter entre 2 e 10 caracteres");
+    const validation = projectSchema.safeParse(formData);
+    if (!validation.success) {
+      const issues = validation.error.issues;
+      toast.error(issues[0].message);
       return;
     }
 

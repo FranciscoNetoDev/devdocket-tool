@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { taskSchema } from "@/utils/validationSchemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,10 +141,19 @@ export default function NewTask() {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validação: título obrigatório
-    if (!title.trim()) {
-      toast.error("Por favor, preencha o título da task");
+
+    const validation = taskSchema.safeParse({
+      title,
+      description,
+      estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
+      due_date: dueDate,
+      priority,
+      status,
+    });
+
+    if (!validation.success) {
+      const issues = validation.error.issues;
+      toast.error(issues[0].message);
       return;
     }
 

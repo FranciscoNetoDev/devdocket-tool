@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { differenceInDays, format, eachDayOfInterval, isWeekend, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ManageSprintStoriesDialog from "./ManageSprintStoriesDialog";
-import SprintCalendarView from "./SprintCalendarView";
+import SprintCalendarView from "./SprintCalendarView/SprintCalendarView";
 import RetrospectiveDialog from "../project/RetrospectiveDialog";
 import RetrospectiveView from "../project/RetrospectiveView";
 

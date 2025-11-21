@@ -209,19 +209,23 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-4">
+    <div className="space-y-4 pb-4">
+      {/* Header - Mobile Optimized */}
+      <div className="space-y-3">
+        {/* Navigation Buttons */}
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onBack}>
+          <Button variant="ghost" size="sm" onClick={onBack} className="shrink-0">
             <ArrowLeft className="h-4 w-4" />
+            <span className="ml-1 hidden sm:inline">Voltar</span>
           </Button>
           {onNavigate && (
-            <>
+            <div className="flex gap-1">
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => onNavigate('prev')}
                 disabled={!hasPrev}
+                className="shrink-0"
               >
                 <ArrowLeft className="h-4 w-4" />
               </Button>
@@ -230,60 +234,71 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
                 size="sm" 
                 onClick={() => onNavigate('next')}
                 disabled={!hasNext}
+                className="shrink-0"
               >
                 <ArrowRight className="h-4 w-4" />
               </Button>
-            </>
+            </div>
           )}
         </div>
-        <div className="flex-1">
-          <h2 className="text-2xl font-bold">{sprint.name}</h2>
+
+        {/* Title and Goal */}
+        <div>
+          <h2 className="text-xl sm:text-2xl font-bold break-words">{sprint.name}</h2>
           {sprint.goal && (
-            <p className="text-muted-foreground">{sprint.goal}</p>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1 break-words">{sprint.goal}</p>
           )}
         </div>
-        <Button onClick={() => setManageDialogOpen(true)}>
+
+        {/* Action Button - Full Width on Mobile */}
+        <Button 
+          onClick={() => setManageDialogOpen(true)} 
+          className="w-full sm:w-auto"
+          size="sm"
+        >
           <Plus className="mr-2 h-4 w-4" />
-          Gerenciar User Stories
+          <span className="hidden sm:inline">Gerenciar User Stories</span>
+          <span className="sm:hidden">Gerenciar Stories</span>
         </Button>
       </div>
 
-      {/* Capacity Card */}
+      {/* Capacity Card - Mobile Optimized */}
       <Card className={capacity.allocatedHours > capacity.totalCapacity ? "border-destructive" : "border-primary"}>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Capacidade da Sprint
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
+            Capacidade
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-5 gap-4 text-center">
+            {/* Mobile: 2 columns, Desktop: 5 columns */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 text-center">
               <div>
-                <div className="text-3xl font-bold">{capacity.days}</div>
-                <div className="text-sm text-muted-foreground">dias totais</div>
+                <div className="text-2xl sm:text-3xl font-bold">{capacity.days}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">dias totais</div>
               </div>
               <div>
-                <div className="text-3xl font-bold">{capacity.totalCapacity}h</div>
-                <div className="text-sm text-muted-foreground">horas total</div>
+                <div className="text-2xl sm:text-3xl font-bold">{capacity.totalCapacity}h</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">hrs total</div>
               </div>
               <div>
-                <div className={`text-3xl font-bold ${capacity.allocatedHours > capacity.totalCapacity ? 'text-destructive' : 'text-primary'}`}>
+                <div className={`text-2xl sm:text-3xl font-bold ${capacity.allocatedHours > capacity.totalCapacity ? 'text-destructive' : 'text-primary'}`}>
                   {capacity.allocatedHours.toFixed(1)}h
                 </div>
-                <div className="text-sm text-muted-foreground">horas alocadas</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">hrs alocadas</div>
               </div>
               <div>
-                <div className={`text-3xl font-bold ${capacity.available < 0 ? 'text-destructive' : 'text-green-600'}`}>
+                <div className={`text-2xl sm:text-3xl font-bold ${capacity.available < 0 ? 'text-destructive' : 'text-green-600'}`}>
                   {capacity.available.toFixed(1)}h
                 </div>
-                <div className="text-sm text-muted-foreground">horas disponíveis</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">hrs disponíveis</div>
               </div>
-              <div>
-                <div className={`text-3xl font-bold ${capacity.daysRemaining === 0 ? 'text-orange-600' : 'text-blue-600'}`}>
+              <div className="col-span-2 sm:col-span-1">
+                <div className={`text-2xl sm:text-3xl font-bold ${capacity.daysRemaining === 0 ? 'text-orange-600' : 'text-blue-600'}`}>
                   {capacity.daysRemaining}
                 </div>
-                <div className="text-sm text-muted-foreground">dias restantes</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">dias restantes</div>
               </div>
             </div>
 
@@ -306,27 +321,27 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
             </div>
 
             {capacity.allocatedHours > capacity.totalCapacity && (
-              <div className="text-sm text-destructive font-medium">
-                ⚠️ Capacidade excedida em {(capacity.allocatedHours - capacity.totalCapacity).toFixed(1)} horas
+              <div className="text-xs sm:text-sm text-destructive font-medium p-2 bg-destructive/10 rounded">
+                ⚠️ Capacidade excedida em {(capacity.allocatedHours - capacity.totalCapacity).toFixed(1)}h
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="stories">
-        <TabsList>
-          <TabsTrigger value="stories">
-            <FileText className="mr-2 h-4 w-4" />
-            User Stories ({userStories.length})
+      <Tabs defaultValue="stories" className="space-y-4">
+        <TabsList className="w-full grid grid-cols-3 h-auto">
+          <TabsTrigger value="stories" className="flex-col sm:flex-row gap-1 py-2">
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="text-xs sm:text-sm">Stories <span className="hidden sm:inline">({userStories.length})</span></span>
           </TabsTrigger>
-          <TabsTrigger value="calendar">
-            <CalendarDays className="mr-2 h-4 w-4" />
-            Calendário
+          <TabsTrigger value="calendar" className="flex-col sm:flex-row gap-1 py-2">
+            <CalendarDays className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="text-xs sm:text-sm">Calendário</span>
           </TabsTrigger>
-          <TabsTrigger value="retrospectives">
-            <FileText className="mr-2 h-4 w-4" />
-            Retrospectivas
+          <TabsTrigger value="retrospectives" className="flex-col sm:flex-row gap-1 py-2">
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="text-xs sm:text-sm">Retros</span>
           </TabsTrigger>
         </TabsList>
 
@@ -341,9 +356,10 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
 
         <TabsContent value="retrospectives" className="space-y-4">
           <div className="flex justify-end mb-4">
-            <Button onClick={() => setRetroDialogOpen(true)}>
+            <Button onClick={() => setRetroDialogOpen(true)} size="sm" className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              Nova Retrospectiva
+              <span className="hidden sm:inline">Nova Retrospectiva</span>
+              <span className="sm:hidden">Nova Retro</span>
             </Button>
           </div>
           <RetrospectiveView sprintId={sprint.id} />
@@ -368,24 +384,24 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
                 
                 return (
                   <Card key={story.id} className="border-l-4 border-l-blue-400">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-base">{story.title}</CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
+                    <CardHeader className="pb-3">
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-sm sm:text-base break-words">{story.title}</CardTitle>
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
                             {story.projects?.key} • {story.projects?.name}
                           </p>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           {story.story_points && (
-                            <Badge variant="outline" className="font-bold">{story.story_points} pts</Badge>
+                            <Badge variant="outline" className="font-bold text-xs">{story.story_points} pts</Badge>
                           )}
-                          <Badge className={statusColors[story.status]}>
+                          <Badge className={`${statusColors[story.status]} text-xs`}>
                             {story.status === 'draft' ? 'Rascunho' : 
                              story.status === 'ready' ? 'Pronta' : 
                              story.status === 'in_progress' ? 'Em Progresso' : 'Concluída'}
                           </Badge>
-                          <Badge className={priorityColors[story.priority]}>
+                          <Badge className={`${priorityColors[story.priority]} text-xs`}>
                             {story.priority === 'low' ? 'Baixa' : 
                              story.priority === 'medium' ? 'Média' : 
                              story.priority === 'high' ? 'Alta' : 'Crítica'}
@@ -395,53 +411,53 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
                     </CardHeader>
                     
                     {storyTasks.length > 0 && (
-                      <CardContent>
+                      <CardContent className="pt-0">
                         <div className="space-y-2">
-                          <div className="text-sm font-medium text-muted-foreground mb-2">
+                          <div className="text-xs sm:text-sm font-medium text-muted-foreground mb-2">
                             Tasks ({storyTasks.length})
                           </div>
                           {storyTasks.map((task) => (
                             <div
                               key={task.id}
-                              className="flex flex-col gap-2 p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                              className="flex flex-col gap-2 p-3 sm:p-4 border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
                             >
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium mb-1">{task.title}</p>
+                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs sm:text-sm font-medium mb-1 break-words">{task.title}</p>
                                   <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                     {task.estimated_hours && (
                                       <div className="flex items-center gap-1">
-                                        <Clock className="h-3 w-3" />
+                                        <Clock className="h-3 w-3 shrink-0" />
                                         <span>Est: {task.estimated_hours}h</span>
                                       </div>
                                     )}
                                     {task.actual_hours && (
                                       <div className="flex items-center gap-1">
-                                        <Clock className="h-3 w-3" />
+                                        <Clock className="h-3 w-3 shrink-0" />
                                         <span>Real: {task.actual_hours}h</span>
                                       </div>
                                     )}
                                     {task.due_date && (
                                       <div className="flex items-center gap-1">
-                                        <Calendar className="h-3 w-3" />
-                                        <span>{format(new Date(task.due_date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                                        <Calendar className="h-3 w-3 shrink-0" />
+                                        <span>{format(new Date(task.due_date), "dd/MM/yy", { locale: ptBR })}</span>
                                       </div>
                                     )}
                                     {task.task_assignees && task.task_assignees.length > 0 && (
                                       <div className="flex items-center gap-1">
-                                        <User className="h-3 w-3" />
-                                        <span>{task.task_assignees.map(a => a.profiles?.nickname || a.profiles?.full_name || "Sem nome").join(", ")}</span>
+                                        <User className="h-3 w-3 shrink-0" />
+                                        <span className="truncate">{task.task_assignees.map(a => a.profiles?.nickname || a.profiles?.full_name || "Sem nome").join(", ")}</span>
                                       </div>
                                     )}
                                   </div>
                                 </div>
-                                <div className="flex gap-2">
-                                  <Badge className={statusColors[task.status]} variant="secondary">
+                                <div className="flex flex-wrap gap-2">
+                                  <Badge className={`${statusColors[task.status]} text-xs`} variant="secondary">
                                     {task.status === 'todo' ? 'A Fazer' : 
                                      task.status === 'in_progress' ? 'Em Progresso' : 
                                      task.status === 'done' ? 'Concluído' : 'Bloqueado'}
                                   </Badge>
-                                  <Badge className={priorityColors[task.priority]} variant="secondary">
+                                  <Badge className={`${priorityColors[task.priority]} text-xs`} variant="secondary">
                                     {task.priority === 'low' ? 'Baixa' : 
                                      task.priority === 'medium' ? 'Média' : 
                                      task.priority === 'high' ? 'Alta' : 'Crítica'}

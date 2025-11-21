@@ -10,6 +10,8 @@ import { differenceInDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ManageSprintStoriesDialog from "./ManageSprintStoriesDialog";
 import SprintCalendarView from "./SprintCalendarView";
+import RetrospectiveDialog from "../project/RetrospectiveDialog";
+import RetrospectiveView from "../project/RetrospectiveView";
 
 interface Sprint {
   id: string;
@@ -69,6 +71,7 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
   const [tasks, setTasks] = useState<Task[]>([]);
   const [userStories, setUserStories] = useState<UserStory[]>([]);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
+  const [retroDialogOpen, setRetroDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchSprintData();
@@ -321,6 +324,10 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
             <CalendarDays className="mr-2 h-4 w-4" />
             Calendário
           </TabsTrigger>
+          <TabsTrigger value="retrospectives">
+            <FileText className="mr-2 h-4 w-4" />
+            Retrospectivas
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="calendar" className="space-y-4">
@@ -330,6 +337,16 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
             userStories={userStories}
             tasks={tasks}
           />
+        </TabsContent>
+
+        <TabsContent value="retrospectives" className="space-y-4">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => setRetroDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Retrospectiva
+            </Button>
+          </div>
+          <RetrospectiveView sprintId={sprint.id} />
         </TabsContent>
 
         <TabsContent value="stories" className="space-y-4">
@@ -449,6 +466,16 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
         onOpenChange={setManageDialogOpen}
         sprint={sprint}
         onSuccess={fetchSprintData}
+      />
+
+      <RetrospectiveDialog
+        open={retroDialogOpen}
+        onOpenChange={setRetroDialogOpen}
+        sprintId={sprint.id}
+        onSuccess={() => {
+          setRetroDialogOpen(false);
+          // Force refresh of retrospectives view
+        }}
       />
     </div>
   );

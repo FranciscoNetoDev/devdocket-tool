@@ -438,7 +438,7 @@ export default function Dashboard() {
                           />
                           <div>
                             <CardTitle className="text-lg">{project.name}</CardTitle>
-                            <CardDescription className="text-xs space-y-1">
+                            <div className="text-xs text-muted-foreground space-y-1">
                               <div>Criado em {new Date(project.created_at).toLocaleDateString("pt-BR")}</div>
                               {project.due_date && (
                                 <div className="flex items-center gap-1">
@@ -455,7 +455,7 @@ export default function Dashboard() {
                                   </span>
                                 </div>
                               )}
-                            </CardDescription>
+                            </div>
                           </div>
                         </div>
                         <DropdownMenu>

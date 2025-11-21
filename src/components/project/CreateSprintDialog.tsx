@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { sprintSchema } from "@/utils/validationSchemas";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,8 +42,10 @@ export default function CreateSprintDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.start_date || !formData.end_date) {
-      toast.error("Preencha todos os campos obrigatórios");
+    const validation = sprintSchema.safeParse(formData);
+    if (!validation.success) {
+      const issues = validation.error.issues;
+      toast.error(issues[0].message);
       return;
     }
 

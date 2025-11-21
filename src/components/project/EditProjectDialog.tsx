@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { projectSchema } from "@/utils/validationSchemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,8 +49,13 @@ export default function EditProjectDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim()) {
-      toast.error("O nome do projeto é obrigatório");
+    const validation = projectSchema.safeParse({
+      ...formData,
+      key: project.key
+    });
+    if (!validation.success) {
+      const issues = validation.error.issues;
+      toast.error(issues[0].message);
       return;
     }
 

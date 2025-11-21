@@ -821,7 +821,6 @@ export type Database = {
               p_project_id: string
               p_status: Database["public"]["Enums"]["task_status"]
               p_title: string
-              p_user_story_id: string
             }
             Returns: Json
           }
@@ -834,6 +833,7 @@ export type Database = {
               p_project_id: string
               p_status: Database["public"]["Enums"]["task_status"]
               p_title: string
+              p_user_story_id: string
             }
             Returns: Json
           }

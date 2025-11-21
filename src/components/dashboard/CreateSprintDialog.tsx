@@ -111,6 +111,28 @@ export default function CreateSprintDialog({
         return;
       }
 
+      // Verificar se já existe sprint com datas sobrepostas
+      const { data: existingSprints, error: checkError } = await supabase
+        .from("sprints")
+        .select("id, name, start_date, end_date")
+        .eq("org_id", userRole.org_id)
+        .or(`and(start_date.lte.${formData.end_date},end_date.gte.${formData.start_date})`);
+
+      if (checkError) {
+        toast.error("Erro ao verificar sprints existentes: " + checkError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (existingSprints && existingSprints.length > 0) {
+        const conflictingSprint = existingSprints[0];
+        toast.error(
+          `Já existe uma sprint "${conflictingSprint.name}" com datas sobrepostas (${format(new Date(conflictingSprint.start_date), "dd/MM/yyyy")} - ${format(new Date(conflictingSprint.end_date), "dd/MM/yyyy")})`
+        );
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("sprints")
         .insert([{
@@ -146,41 +168,43 @@ export default function CreateSprintDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>Nova Sprint</DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">Nova Sprint</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome da Sprint *</Label>
+            <Label htmlFor="name" className="text-sm">Nome da Sprint *</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Sprint 1"
+              className="h-9 sm:h-10"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="goal">Objetivo</Label>
+            <Label htmlFor="goal" className="text-sm">Objetivo</Label>
             <Textarea
               id="goal"
               value={formData.goal}
               onChange={(e) => setFormData({ ...formData, goal: e.target.value })}
               placeholder="Descreva o objetivo desta sprint..."
               rows={3}
+              className="text-sm resize-none"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="duration">Duração *</Label>
+            <Label htmlFor="duration" className="text-sm">Duração *</Label>
             <Select 
               value={duration} 
               onValueChange={(value: "7" | "14") => setDuration(value)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-9 sm:h-10">
                 <SelectValue placeholder="Selecione a duração" />
               </SelectTrigger>
               <SelectContent>
@@ -190,9 +214,9 @@ export default function CreateSprintDialog({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
-              <Label htmlFor="start_date">Data Início *</Label>
+              <Label htmlFor="start_date" className="text-sm">Data Início *</Label>
               <Input
                 id="start_date"
                 type="date"
@@ -204,31 +228,41 @@ export default function CreateSprintDialog({
                     start_date: e.target.value
                   });
                 }}
+                className="w-full h-9 sm:h-10"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="end_date">Data Fim *</Label>
+              <Label htmlFor="end_date" className="text-sm">Data Fim *</Label>
               <Input
                 id="end_date"
                 type="date"
                 value={formData.end_date}
                 readOnly
-                className="bg-muted cursor-not-allowed"
+                className="bg-muted cursor-not-allowed w-full h-9 sm:h-10"
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Calculada automaticamente baseada na duração
+                Calculada automaticamente
               </p>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-3 sm:pt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => handleOpenChange(false)}
+              className="w-full sm:w-auto h-9"
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button 
+              type="submit" 
+              disabled={loading}
+              className="w-full sm:w-auto h-9"
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Criar Sprint
             </Button>

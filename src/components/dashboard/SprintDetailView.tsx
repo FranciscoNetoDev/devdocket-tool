@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowRight, Loader2, FileText, Plus, Calendar, CalendarDays, Clock, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, FileText, Plus, Calendar, CalendarDays, Clock, User, Link } from "lucide-react";
 import { toast } from "sonner";
 import { differenceInDays, format, eachDayOfInterval, isWeekend, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -12,6 +12,7 @@ import ManageSprintStoriesDialog from "./ManageSprintStoriesDialog";
 import SprintCalendarView from "./SprintCalendarView/SprintCalendarView";
 import RetrospectiveDialog from "../project/RetrospectiveDialog";
 import RetrospectiveView from "../project/RetrospectiveView";
+import LinkProjectsToSprintDialog from "./LinkProjectsToSprintDialog";
 
 // Feriados nacionais brasileiros de 2024-2026 (pode ser expandido)
 const brazilianHolidays = [
@@ -125,6 +126,7 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
   const [userStories, setUserStories] = useState<UserStory[]>([]);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
   const [retroDialogOpen, setRetroDialogOpen] = useState(false);
+  const [linkProjectsDialogOpen, setLinkProjectsDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchSprintData();
@@ -312,16 +314,28 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
           )}
         </div>
 
-        {/* Action Button - Full Width on Mobile */}
-        <Button 
-          onClick={() => setManageDialogOpen(true)} 
-          className="w-full sm:w-auto"
-          size="sm"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">Gerenciar User Stories</span>
-          <span className="sm:hidden">Gerenciar Stories</span>
-        </Button>
+        {/* Action Buttons - Full Width on Mobile */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button 
+            onClick={() => setManageDialogOpen(true)} 
+            className="w-full sm:w-auto"
+            size="sm"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Gerenciar User Stories</span>
+            <span className="sm:hidden">Gerenciar Stories</span>
+          </Button>
+          <Button 
+            onClick={() => setLinkProjectsDialogOpen(true)} 
+            variant="outline"
+            className="w-full sm:w-auto"
+            size="sm"
+          >
+            <Link className="mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Vincular Projetos</span>
+            <span className="sm:hidden">Projetos</span>
+          </Button>
+        </div>
       </div>
 
       {/* Capacity Card - Mobile Optimized */}
@@ -548,6 +562,14 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
         open={manageDialogOpen}
         onOpenChange={setManageDialogOpen}
         sprint={sprint}
+        onSuccess={fetchSprintData}
+      />
+
+      <LinkProjectsToSprintDialog
+        sprintId={sprint.id}
+        sprintName={sprint.name}
+        open={linkProjectsDialogOpen}
+        onOpenChange={setLinkProjectsDialogOpen}
         onSuccess={fetchSprintData}
       />
 

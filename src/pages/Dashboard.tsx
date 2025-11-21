@@ -79,7 +79,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!authLoading && !user) {
-      navigate("/auth");
+      navigate("/");
     }
   }, [user, authLoading, navigate]);
 

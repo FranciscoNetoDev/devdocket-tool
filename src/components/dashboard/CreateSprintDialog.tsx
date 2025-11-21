@@ -93,19 +93,13 @@ export default function CreateSprintDialog({
       }
 
       // Get user's org
-      console.log("User ID:", user?.id);
-      
       const { data: userRole, error: roleError } = await supabase
         .from("user_roles")
         .select("org_id")
         .eq("user_id", user?.id)
         .maybeSingle();
 
-      console.log("User Role:", userRole);
-      console.log("Role Error:", roleError);
-
       if (roleError) {
-        console.error("Error fetching user role:", roleError);
         toast.error("Erro ao buscar organização: " + roleError.message);
         setLoading(false);
         return;

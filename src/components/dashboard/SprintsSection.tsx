@@ -256,13 +256,14 @@ export default function SprintsSection() {
   const currentSprint = sprints[currentSprintIndex];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 pb-4">
+      {/* Header - Mobile Optimized */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold">Sprints</h2>
-          <p className="text-muted-foreground">Gerencie sprints globais</p>
+          <h2 className="text-xl sm:text-2xl font-bold">Sprints</h2>
+          <p className="text-sm text-muted-foreground">Gerencie sprints globais</p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
+        <Button onClick={() => setCreateDialogOpen(true)} size="sm" className="w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" />
           Nova Sprint
         </Button>
@@ -280,20 +281,22 @@ export default function SprintsSection() {
         </Card>
       ) : (
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              {/* Navigation - Mobile Friendly */}
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => handleNavigateList('prev')}
                   disabled={currentSprintIndex === 0}
+                  className="shrink-0"
                 >
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
-                <div>
-                  <CardTitle className="text-xl">{currentSprint.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-base sm:text-xl truncate">{currentSprint.name}</CardTitle>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Sprint {currentSprintIndex + 1} de {sprints.length}
                   </p>
                 </div>
@@ -302,17 +305,20 @@ export default function SprintsSection() {
                   size="icon"
                   onClick={() => handleNavigateList('next')}
                   disabled={currentSprintIndex === sprints.length - 1}
+                  className="shrink-0"
                 >
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge className={statusColors[currentSprint.status as keyof typeof statusColors]}>
+              
+              {/* Status and Actions */}
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <Badge className={`${statusColors[currentSprint.status as keyof typeof statusColors]} text-xs`}>
                   {statusLabels[currentSprint.status as keyof typeof statusLabels]}
                 </Badge>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
+                    <Button variant="ghost" size="icon" className="shrink-0">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -357,19 +363,19 @@ export default function SprintsSection() {
           <CardContent className="space-y-4">
             {currentSprint.goal && (
               <div className="flex items-start gap-2">
-                <Target className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium mb-1">Objetivo</p>
-                  <p className="text-sm text-muted-foreground">{currentSprint.goal}</p>
+                <Target className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground mt-0.5 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium mb-1">Objetivo</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground break-words">{currentSprint.goal}</p>
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium mb-1">Período</p>
-                <p className="text-sm text-muted-foreground">
-                  {format(new Date(currentSprint.start_date), "dd 'de' MMMM", { locale: ptBR })} - {format(new Date(currentSprint.end_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+            <div className="flex items-start gap-2">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium mb-1">Período</p>
+                <p className="text-xs sm:text-sm text-muted-foreground break-words">
+                  {format(new Date(currentSprint.start_date), "dd 'de' MMM", { locale: ptBR })} - {format(new Date(currentSprint.end_date), "dd 'de' MMM 'de' yyyy", { locale: ptBR })}
                 </p>
               </div>
             </div>
@@ -377,24 +383,25 @@ export default function SprintsSection() {
               const daysRemaining = differenceInDays(new Date(currentSprint.end_date), new Date());
               return (
                 <div>
-                  <div className="flex items-center justify-between text-sm mb-2">
+                  <div className="flex items-center justify-between text-xs sm:text-sm mb-2">
                     <span className="font-medium">Progresso</span>
                     <span className={daysRemaining < 0 ? "text-destructive font-semibold" : "text-muted-foreground"}>
                       {daysRemaining < 0 
                         ? "Atrasada" 
-                        : `${daysRemaining} dias restantes`}
+                        : `${daysRemaining} ${daysRemaining === 1 ? 'dia' : 'dias'}`}
                     </span>
                   </div>
                 </div>
               );
             })()}
-            <div className="pt-4">
+            <div className="pt-3">
               <Button 
                 onClick={() => setSelectedSprint(currentSprint)}
                 className="w-full"
+                size="sm"
               >
                 <Eye className="mr-2 h-4 w-4" />
-                Ver Detalhes da Sprint
+                Ver Detalhes
               </Button>
             </div>
           </CardContent>

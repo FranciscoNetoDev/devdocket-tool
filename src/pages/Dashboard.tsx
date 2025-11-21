@@ -302,52 +302,54 @@ export default function Dashboard() {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <Tabs defaultValue="projects" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="projects">
-              <FolderKanban className="mr-2 h-4 w-4" />
-              Projetos
+          <TabsList className="mb-4 sm:mb-6 w-full sm:w-auto grid grid-cols-3 sm:inline-flex h-auto">
+            <TabsTrigger value="projects" className="flex-col sm:flex-row gap-1 py-2 text-xs sm:text-sm">
+              <FolderKanban className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Projetos</span>
+              <span className="sm:hidden">Proj</span>
             </TabsTrigger>
-            <TabsTrigger value="sprints">
-              <Target className="mr-2 h-4 w-4" />
+            <TabsTrigger value="sprints" className="flex-col sm:flex-row gap-1 py-2 text-xs sm:text-sm">
+              <Target className="h-3 w-3 sm:h-4 sm:w-4" />
               Sprints
             </TabsTrigger>
-            <TabsTrigger value="backlog">
-              <ListTodo className="mr-2 h-4 w-4" />
-              Backlog Geral
+            <TabsTrigger value="backlog" className="flex-col sm:flex-row gap-1 py-2 text-xs sm:text-sm">
+              <ListTodo className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Backlog Geral</span>
+              <span className="sm:hidden">Back</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="projects">
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-6">
+            <div className="mb-6 sm:mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
                 <div>
-                  <h2 className="text-3xl font-bold mb-2">Meus Projetos</h2>
-                  <p className="text-muted-foreground">
-                    Gerencie e acompanhe todos os seus projetos em um só lugar
+                  <h2 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Meus Projetos</h2>
+                  <p className="text-sm sm:text-base text-muted-foreground">
+                    Gerencie seus projetos
                   </p>
                 </div>
-                <Button onClick={() => navigate("/projects/new")} size="lg">
-                  <Plus className="mr-2 h-5 w-5" />
+                <Button onClick={() => navigate("/projects/new")} size="sm" className="w-full sm:w-auto">
+                  <Plus className="mr-2 h-4 w-4" />
                   Novo Projeto
                 </Button>
               </div>
 
           {/* Search and Filter Section */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex flex-col gap-3 mb-4 sm:mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome, chave ou descrição..."
+                placeholder="Buscar projetos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-9"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-                <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectTrigger className="w-full sm:w-[200px] h-9">
                   <SortAsc className="mr-2 h-4 w-4" />
                   <SelectValue placeholder="Ordenar por" />
                 </SelectTrigger>
@@ -357,7 +359,7 @@ export default function Dashboard() {
                   <SelectItem value="key">Chave (A-Z)</SelectItem>
                 </SelectContent>
               </Select>
-              <div className="flex border rounded-lg overflow-hidden">
+              <div className="flex border rounded-lg overflow-hidden h-9">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="icon"

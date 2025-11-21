@@ -207,6 +207,44 @@ export default function ManageSprintStoriesDialog({
           .insert(insertData);
 
         if (insertError) throw insertError;
+
+        // Vincular automaticamente os projetos das user stories à sprint
+        const projectIds = Array.from(
+          new Set(
+            availableStories
+              .filter(story => toAdd.includes(story.id))
+              .map(story => story.project_id)
+          )
+        );
+
+        if (projectIds.length > 0) {
+          // Verificar quais projetos já estão vinculados
+          const { data: existingLinks } = await supabase
+            .from("sprint_projects")
+            .select("project_id")
+            .eq("sprint_id", sprint.id)
+            .in("project_id", projectIds);
+
+          const existingProjectIds = existingLinks?.map(link => link.project_id) || [];
+          const newProjectIds = projectIds.filter(id => !existingProjectIds.includes(id));
+
+          if (newProjectIds.length > 0) {
+            const projectLinks = newProjectIds.map(project_id => ({
+              sprint_id: sprint.id,
+              project_id,
+            }));
+
+            const { error: linkError } = await supabase
+              .from("sprint_projects")
+              .insert(projectLinks);
+
+            if (linkError) {
+              console.error("Error linking projects:", linkError);
+              // Não falhar a operação inteira, apenas avisar
+              toast.warning("User stories adicionadas, mas houve erro ao vincular alguns projetos");
+            }
+          }
+        }
       }
 
       toast.success("User stories atualizadas com sucesso!");

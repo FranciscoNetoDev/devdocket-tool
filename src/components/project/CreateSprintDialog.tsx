@@ -69,16 +69,31 @@ export default function CreateSprintDialog({
         return;
       }
 
-      const { error } = await supabase.from("sprints").insert({
-        org_id: userRole.org_id,
-        name: formData.name,
-        goal: formData.goal || null,
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-        status: "planning",
-      });
+      // Create sprint
+      const { data: sprintData, error: sprintError } = await supabase
+        .from("sprints")
+        .insert({
+          org_id: userRole.org_id,
+          name: formData.name,
+          goal: formData.goal || null,
+          start_date: formData.start_date,
+          end_date: formData.end_date,
+          status: "planning",
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (sprintError) throw sprintError;
+
+      // Link sprint to project
+      const { error: linkError } = await supabase
+        .from("sprint_projects")
+        .insert({
+          sprint_id: sprintData.id,
+          project_id: projectId,
+        });
+
+      if (linkError) throw linkError;
 
       toast.success("Sprint criada com sucesso!");
       setFormData({ name: "", goal: "", start_date: "", end_date: "" });

@@ -6,12 +6,65 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, ArrowRight, Loader2, FileText, Plus, Calendar, CalendarDays, Clock, User } from "lucide-react";
 import { toast } from "sonner";
-import { differenceInDays, format } from "date-fns";
+import { differenceInDays, format, eachDayOfInterval, isWeekend, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import ManageSprintStoriesDialog from "./ManageSprintStoriesDialog";
 import SprintCalendarView from "./SprintCalendarView";
 import RetrospectiveDialog from "../project/RetrospectiveDialog";
 import RetrospectiveView from "../project/RetrospectiveView";
+
+// Feriados nacionais brasileiros de 2024-2026 (pode ser expandido)
+const brazilianHolidays = [
+  // 2024
+  "2024-01-01", // Ano Novo
+  "2024-02-13", // Carnaval
+  "2024-03-29", // Sexta-feira Santa
+  "2024-04-21", // Tiradentes
+  "2024-05-01", // Dia do Trabalho
+  "2024-05-30", // Corpus Christi
+  "2024-09-07", // Independência
+  "2024-10-12", // Nossa Senhora Aparecida
+  "2024-11-02", // Finados
+  "2024-11-15", // Proclamação da República
+  "2024-11-20", // Consciência Negra
+  "2024-12-25", // Natal
+  // 2025
+  "2025-01-01",
+  "2025-03-04", // Carnaval
+  "2025-04-18", // Sexta-feira Santa
+  "2025-04-21",
+  "2025-05-01",
+  "2025-06-19", // Corpus Christi
+  "2025-09-07",
+  "2025-10-12",
+  "2025-11-02",
+  "2025-11-15",
+  "2025-11-20",
+  "2025-12-25",
+  // 2026
+  "2026-01-01",
+  "2026-02-17", // Carnaval
+  "2026-04-03", // Sexta-feira Santa
+  "2026-04-21",
+  "2026-05-01",
+  "2026-06-04", // Corpus Christi
+  "2026-09-07",
+  "2026-10-12",
+  "2026-11-02",
+  "2026-11-15",
+  "2026-11-20",
+  "2026-12-25",
+];
+
+const isHoliday = (date: Date): boolean => {
+  const dateStr = format(date, "yyyy-MM-dd");
+  return brazilianHolidays.includes(dateStr);
+};
+
+const countBusinessDays = (startDate: Date, endDate: Date): number => {
+  const days = eachDayOfInterval({ start: startDate, end: endDate });
+  return days.filter(day => !isWeekend(day) && !isHoliday(day)).length;
+};
 
 interface Sprint {
   id: string;
@@ -181,19 +234,28 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
     const startDate = new Date(sprint.start_date);
     const endDate = new Date(sprint.end_date);
     const today = new Date();
-    const days = differenceInDays(endDate, startDate) + 1;
-    const totalCapacity = days * 8; // 8 horas por dia
+    
+    // Calcular dias totais e dias úteis
+    const totalDays = differenceInDays(endDate, startDate) + 1;
+    const businessDays = countBusinessDays(startDate, endDate);
+    
+    // Capacidade baseada em dias úteis (8 horas por dia útil)
+    const totalCapacity = businessDays * 8;
+    
     const allocatedHours = tasks.reduce((sum, task) => sum + (task.estimated_hours || 0), 0);
     const actualHours = tasks.reduce((sum, task) => sum + (task.actual_hours || 0), 0);
-    const daysRemaining = Math.max(0, differenceInDays(endDate, today));
+    
+    // Dias úteis restantes
+    const businessDaysRemaining = countBusinessDays(today, endDate);
 
     return {
-      days,
+      totalDays,
+      businessDays,
       totalCapacity,
       allocatedHours,
       actualHours,
       available: Math.max(0, totalCapacity - allocatedHours),
-      daysRemaining,
+      businessDaysRemaining: Math.max(0, businessDaysRemaining),
       percentage: totalCapacity > 0 ? (allocatedHours / totalCapacity) * 100 : 0,
     };
   };
@@ -267,7 +329,7 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
         <CardHeader className="pb-3">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
-            Capacidade
+            Capacidade (Dias Úteis)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -275,8 +337,8 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
             {/* Mobile: 2 columns, Desktop: 5 columns */}
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 text-center">
               <div>
-                <div className="text-2xl sm:text-3xl font-bold">{capacity.days}</div>
-                <div className="text-xs sm:text-sm text-muted-foreground">dias totais</div>
+                <div className="text-2xl sm:text-3xl font-bold">{capacity.businessDays}</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">dias úteis</div>
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-bold">{capacity.totalCapacity}h</div>
@@ -295,10 +357,10 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
                 <div className="text-xs sm:text-sm text-muted-foreground">hrs disponíveis</div>
               </div>
               <div className="col-span-2 sm:col-span-1">
-                <div className={`text-2xl sm:text-3xl font-bold ${capacity.daysRemaining === 0 ? 'text-orange-600' : 'text-blue-600'}`}>
-                  {capacity.daysRemaining}
+                <div className={`text-2xl sm:text-3xl font-bold ${capacity.businessDaysRemaining === 0 ? 'text-orange-600' : 'text-blue-600'}`}>
+                  {capacity.businessDaysRemaining}
                 </div>
-                <div className="text-xs sm:text-sm text-muted-foreground">dias restantes</div>
+                <div className="text-xs sm:text-sm text-muted-foreground">dias úteis restantes</div>
               </div>
             </div>
 
@@ -325,6 +387,11 @@ export default function SprintDetailView({ sprint, onBack, onNavigate, hasNext =
                 ⚠️ Capacidade excedida em {(capacity.allocatedHours - capacity.totalCapacity).toFixed(1)}h
               </div>
             )}
+            
+            {/* Info sobre dias úteis */}
+            <div className="text-xs text-muted-foreground p-2 bg-muted/50 rounded">
+              📅 Sprint: {capacity.totalDays} dias totais • {capacity.businessDays} dias úteis (sem finais de semana e feriados)
+            </div>
           </div>
         </CardContent>
       </Card>

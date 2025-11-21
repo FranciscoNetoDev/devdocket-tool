@@ -225,18 +225,15 @@ export default function SprintCalendarView({
                     {/* Footer com horas e utilização */}
                     {!isWeekendDay && (
                       <div className="space-y-1 mt-auto pt-1 border-t">
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-center">
                           <Badge
                             variant="outline"
                             className={`text-[10px] px-1.5 py-0 h-4 whitespace-nowrap ${
                               isOverCapacity ? "border-destructive text-destructive" : ""
                             }`}
                           >
-                            {utilization.toFixed(1)}h
+                            {utilization.toFixed(1)}h ({utilizationPercent.toFixed(0)}%)
                           </Badge>
-                          <span className="text-[10px] text-muted-foreground">
-                            {utilizationPercent.toFixed(0)}%
-                          </span>
                         </div>
                         <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                           <div

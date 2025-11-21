@@ -19,11 +19,15 @@ export class StorageService {
 
     if (uploadError) throw uploadError;
 
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("user-story-attachments").getPublicUrl(filePath);
+    // Generate signed URL with 1 year expiration
+    const { data, error: signedUrlError } = await supabase.storage
+      .from("user-story-attachments")
+      .createSignedUrl(filePath, 31536000);
 
-    return publicUrl;
+    if (signedUrlError) throw signedUrlError;
+    if (!data?.signedUrl) throw new Error("Failed to generate signed URL");
+
+    return data.signedUrl;
   }
 
   static async saveAttachmentMetadata(

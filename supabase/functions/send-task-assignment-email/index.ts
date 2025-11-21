@@ -26,6 +26,32 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Authenticate the request
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify user authentication
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const {
       taskId,
       taskTitle,
@@ -35,16 +61,50 @@ const handler = async (req: Request): Promise<Response> => {
       assignedToUserId,
     }: TaskAssignmentRequest = await req.json();
 
+    // Verify the authenticated user is the one assigning the task
+    if (user.id !== assignedByUserId) {
+      return new Response(JSON.stringify({ error: "Forbidden: You can only assign tasks as yourself" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     console.log("Processing task assignment email:", {
       taskId,
       assignedToUserId,
       assignedByUserId,
     });
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Verify caller has access to the task's project
+    const { data: task, error: taskError } = await supabase
+      .from("tasks")
+      .select("project_id")
+      .eq("id", taskId)
+      .single();
+
+    if (taskError || !task) {
+      console.error("Task not found:", taskError);
+      return new Response(JSON.stringify({ error: "Task not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify caller is a member of the project
+    const { data: member, error: memberError } = await supabase
+      .from("project_members")
+      .select("id")
+      .eq("project_id", task.project_id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (memberError || !member) {
+      console.error("User is not a project member:", memberError);
+      return new Response(JSON.stringify({ error: "Forbidden: You must be a project member to assign tasks" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Get assignee profile
     const { data: assigneeProfile, error: assigneeError } = await supabase

@@ -5,11 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { addDays, format, differenceInDays, startOfDay } from "date-fns";
+import { addDays, format, startOfDay } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface CreateSprintDialogProps {
   open: boolean;
@@ -25,72 +28,45 @@ export default function CreateSprintDialog({
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [duration, setDuration] = useState<"7" | "14">("14");
+  const [startDate, setStartDate] = useState<Date>();
   const [formData, setFormData] = useState({
     name: "",
     goal: "",
-    start_date: "",
-    end_date: "",
   });
 
   useEffect(() => {
     if (open) {
-      loadLastSprintDates();
-    }
-  }, [open]);
-
-  // Recalculate end_date when duration or start_date changes
-  useEffect(() => {
-    if (formData.start_date) {
-      const startDate = startOfDay(new Date(formData.start_date));
-      const newEndDate = addDays(startDate, parseInt(duration));
-      setFormData(prev => ({
-        ...prev,
-        end_date: format(newEndDate, "yyyy-MM-dd"),
-      }));
-    }
-  }, [duration, formData.start_date]);
-
-  const loadLastSprintDates = async () => {
-    try {
       // Start from today
       const today = startOfDay(new Date());
-      const endDate = addDays(today, parseInt(duration));
-      
-      setFormData(prev => ({
-        ...prev,
-        start_date: format(today, "yyyy-MM-dd"),
-        end_date: format(endDate, "yyyy-MM-dd"),
-      }));
-    } catch (error) {
-      console.error("Error loading last sprint:", error);
+      setStartDate(today);
     }
-  };
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      if (!startDate) {
+        toast.error("Selecione a data de início");
+        setLoading(false);
+        return;
+      }
+
       // Validations - compare dates as strings to avoid timezone issues
       const todayStr = format(new Date(), "yyyy-MM-dd");
+      const startDateStr = format(startDate, "yyyy-MM-dd");
       
       // Check if start date is in the past (before today)
-      if (formData.start_date < todayStr) {
+      if (startDateStr < todayStr) {
         toast.error("A data de início não pode ser retroativa");
         setLoading(false);
         return;
       }
       
-      // Validate that end_date matches the expected calculation
-      const startDate = startOfDay(new Date(formData.start_date));
-      const expectedEndDate = addDays(startDate, parseInt(duration));
-      const expectedEndDateStr = format(expectedEndDate, "yyyy-MM-dd");
-      
-      if (formData.end_date !== expectedEndDateStr) {
-        toast.error(`Erro na duração da sprint. Por favor, tente novamente.`);
-        setLoading(false);
-        return;
-      }
+      // Calculate end date
+      const endDate = addDays(startDate, parseInt(duration));
+      const endDateStr = format(endDate, "yyyy-MM-dd");
 
       // Get user's org
       const { data: userRole, error: roleError } = await supabase
@@ -116,7 +92,7 @@ export default function CreateSprintDialog({
         .from("sprints")
         .select("id, name, start_date, end_date")
         .eq("org_id", userRole.org_id)
-        .or(`and(start_date.lte.${formData.end_date},end_date.gte.${formData.start_date})`);
+        .or(`and(start_date.lte.${endDateStr},end_date.gte.${startDateStr})`);
 
       if (checkError) {
         toast.error("Erro ao verificar sprints existentes: " + checkError.message);
@@ -138,8 +114,8 @@ export default function CreateSprintDialog({
         .insert([{
           name: formData.name,
           goal: formData.goal || null,
-          start_date: formData.start_date,
-          end_date: formData.end_date,
+          start_date: startDateStr,
+          end_date: endDateStr,
           org_id: userRole.org_id,
           status: "planning",
         }]);
@@ -147,7 +123,8 @@ export default function CreateSprintDialog({
       if (error) throw error;
 
       toast.success("Sprint criada com sucesso!");
-      setFormData({ name: "", goal: "", start_date: "", end_date: "" });
+      setFormData({ name: "", goal: "" });
+      setStartDate(undefined);
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
@@ -161,7 +138,8 @@ export default function CreateSprintDialog({
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       // Reset form when closing
-      setFormData({ name: "", goal: "", start_date: "", end_date: "" });
+      setFormData({ name: "", goal: "" });
+      setStartDate(undefined);
     }
     onOpenChange(newOpen);
   };
@@ -216,33 +194,42 @@ export default function CreateSprintDialog({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-2">
-              <Label htmlFor="start_date" className="text-sm">Data Início *</Label>
-              <Input
-                id="start_date"
-                type="date"
-                value={formData.start_date}
-                min={format(new Date(), "yyyy-MM-dd")}
-                onChange={(e) => {
-                  setFormData({ 
-                    ...formData, 
-                    start_date: e.target.value
-                  });
-                }}
-                className="w-full h-9 sm:h-10"
-                required
-              />
+              <Label className="text-sm">Data Início *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-9 sm:h-10 justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "dd/MM/yyyy") : "Selecione a data"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    disabled={(date) => date < startOfDay(new Date())}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="end_date" className="text-sm">Data Fim *</Label>
-              <Input
-                id="end_date"
-                type="date"
-                value={formData.end_date}
-                readOnly
-                className="bg-muted cursor-not-allowed w-full h-9 sm:h-10"
-                required
-              />
+              <Label className="text-sm">Data Fim *</Label>
+              <Button
+                variant="outline"
+                disabled
+                className="w-full h-9 sm:h-10 justify-start text-left font-normal bg-muted cursor-not-allowed"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {startDate ? format(addDays(startDate, parseInt(duration)), "dd/MM/yyyy") : "Automático"}
+              </Button>
               <p className="text-xs text-muted-foreground">
                 Calculada automaticamente
               </p>

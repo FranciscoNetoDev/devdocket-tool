@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(null);
         setUser(null);
         clearAuthStorage();
-        navigate("/auth");
+        navigate("/");
       }
     });
 
@@ -122,14 +122,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearAuthStorage();
       
       // Navigate to auth page
-      navigate("/auth");
+      navigate("/");
     } catch (error) {
       console.error("Error signing out:", error);
       // Even if signOut fails, clear local data
       setUser(null);
       setSession(null);
       clearAuthStorage();
-      navigate("/auth");
+      navigate("/");
     }
   };
 

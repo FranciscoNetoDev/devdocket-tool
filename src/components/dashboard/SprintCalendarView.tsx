@@ -186,17 +186,17 @@ export default function SprintCalendarView({
                   key={day.toISOString()}
                   className={`${
                     isWeekendDay ? "bg-muted/50" : ""
-                  } ${isOverCapacity ? "border-destructive" : ""} ${dayTasks.length > 0 ? "min-h-[120px]" : ""}`}
+                  } ${isOverCapacity ? "border-destructive" : ""}`}
                 >
-                  <CardContent className="p-3 space-y-2">
-                    <div className="flex justify-between items-start">
+                  <CardContent className="p-2 space-y-1.5 min-h-[100px] flex flex-col">
+                    <div className="flex justify-between items-center gap-1">
                       <span className="text-sm font-semibold">
                         {format(day, "d")}
                       </span>
                       {!isWeekendDay && (
                         <Badge
                           variant="outline"
-                          className={`text-xs ${
+                          className={`text-[10px] px-1 py-0 h-4 whitespace-nowrap ${
                             isOverCapacity ? "border-destructive text-destructive" : ""
                           }`}
                         >
@@ -205,13 +205,13 @@ export default function SprintCalendarView({
                       )}
                     </div>
 
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-[10px] text-muted-foreground">
                       {format(day, "MMM", { locale: ptBR })}
                     </div>
 
                     {!isWeekendDay && (
-                      <div className="space-y-1">
-                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="space-y-0.5">
+                        <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full transition-all ${
                               isOverCapacity ? "bg-destructive" : "bg-primary"
@@ -221,7 +221,7 @@ export default function SprintCalendarView({
                             }}
                           />
                         </div>
-                        <div className="text-xs text-center text-muted-foreground">
+                        <div className="text-[10px] text-center text-muted-foreground">
                           {utilizationPercent.toFixed(0)}%
                         </div>
                       </div>
@@ -229,20 +229,25 @@ export default function SprintCalendarView({
 
                     {/* Tasks do dia */}
                     {dayTasks.length > 0 && (
-                      <div className="space-y-1 mt-2">
-                        {dayTasks.map((task) => (
+                      <div className="space-y-1 mt-auto">
+                        {dayTasks.slice(0, 2).map((task) => (
                           <div
                             key={task.id}
-                            className="text-xs p-1.5 rounded border bg-background/80 hover:bg-background transition-colors"
+                            className="text-[10px] p-1 rounded border bg-background/80 hover:bg-background transition-colors"
                           >
                             <div className="flex items-center gap-1">
                               <div
-                                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${statusColors[task.status]}`}
+                                className={`w-1 h-1 rounded-full flex-shrink-0 ${statusColors[task.status]}`}
                               />
-                              <span className="truncate flex-1">{task.title}</span>
+                              <span className="truncate flex-1 leading-tight">{task.title}</span>
                             </div>
                           </div>
                         ))}
+                        {dayTasks.length > 2 && (
+                          <div className="text-[10px] text-center text-muted-foreground">
+                            +{dayTasks.length - 2} tarefas
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

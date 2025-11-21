@@ -26,7 +26,7 @@ interface Retrospective {
 }
 
 interface RetrospectiveViewProps {
-  projectId: string;
+  sprintId?: string; // Opcional para filtrar por sprint específica
 }
 
 const categoryLabels = {
@@ -43,27 +43,53 @@ const categoryColors = {
   opportunity: "bg-blue-50 border-blue-200",
 };
 
-export default function RetrospectiveView({ projectId }: RetrospectiveViewProps) {
+export default function RetrospectiveView({ sprintId }: RetrospectiveViewProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [retrospectives, setRetrospectives] = useState<Retrospective[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    fetchRetrospectives();
-  }, [projectId]);
+    checkAdminStatus();
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchRetrospectives();
+    }
+  }, [sprintId, user]);
+
+  const checkAdminStatus = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) throw error;
+      setIsAdmin(data?.role === 'admin');
+    } catch (error) {
+      console.error("Error checking admin status:", error);
+    }
+  };
 
   const fetchRetrospectives = async () => {
     try {
       setLoading(true);
 
-      // Buscar retrospectivas das sprints
-      const { data, error } = await supabase
+      // Buscar retrospectivas - RLS cuida das permissões
+      // (usuário vê suas próprias ou todas se for admin)
+      let query = supabase
         .from("retrospectives")
         .select(`
           id,
           title,
           date,
           sprint_id,
+          created_by,
           sprints:sprint_id(name),
           retrospective_items (
             id,
@@ -72,8 +98,13 @@ export default function RetrospectiveView({ projectId }: RetrospectiveViewProps)
             created_by,
             created_at
           )
-        `)
-        .order("date", { ascending: false });
+        `);
+
+      if (sprintId) {
+        query = query.eq("sprint_id", sprintId);
+      }
+
+      const { data, error } = await query.order("date", { ascending: false });
 
       if (error) throw error;
 
@@ -99,16 +130,24 @@ export default function RetrospectiveView({ projectId }: RetrospectiveViewProps)
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Retrospectivas</h2>
-          <p className="text-muted-foreground">Retrospectivas das sprints concluídas</p>
+          <p className="text-muted-foreground">
+            {isAdmin 
+              ? "Todas as retrospectivas das sprints (você é admin)" 
+              : "Suas retrospectivas criadas"}
+          </p>
         </div>
       </div>
 
       {retrospectives.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground mb-2">Nenhuma retrospectiva criada ainda</p>
+            <p className="text-muted-foreground mb-2">
+              {isAdmin 
+                ? "Nenhuma retrospectiva criada ainda" 
+                : "Você ainda não criou nenhuma retrospectiva"}
+            </p>
             <p className="text-sm text-muted-foreground">
-              Retrospectivas são criadas ao finalizar sprints
+              Retrospectivas são criadas durante as sprints
             </p>
           </CardContent>
         </Card>

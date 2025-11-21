@@ -299,7 +299,6 @@ export type Database = {
           created_by: string
           date: string
           id: string
-          project_id: string | null
           sprint_id: string
           title: string
           updated_at: string
@@ -309,7 +308,6 @@ export type Database = {
           created_by: string
           date?: string
           id?: string
-          project_id?: string | null
           sprint_id: string
           title: string
           updated_at?: string
@@ -319,19 +317,11 @@ export type Database = {
           created_by?: string
           date?: string
           id?: string
-          project_id?: string | null
           sprint_id?: string
           title?: string
           updated_at?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "retrospectives_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "retrospectives_sprint_id_fkey"
             columns: ["sprint_id"]

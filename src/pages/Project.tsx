@@ -144,7 +144,7 @@ export default function Project() {
           </TabsContent>
 
           <TabsContent value="retrospectives" className="mt-0">
-            <RetrospectiveView projectId={projectId!} />
+            <RetrospectiveView />
           </TabsContent>
         </Tabs>
       </main>

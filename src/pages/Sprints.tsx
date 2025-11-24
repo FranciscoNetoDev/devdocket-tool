@@ -41,53 +41,65 @@ export default function Sprints() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   useEffect(() => {
-    fetchSprints();
-  }, []);
+    if (user?.id) {
+      fetchSprints();
+    }
+  }, [user?.id]);
 
   const fetchSprints = async () => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
 
-      // Fetch all sprints the user has access to
+      // Fetch sprints with linked projects in a single query
       const { data: sprintsData, error: sprintsError } = await supabase
         .from("sprints")
-        .select("*")
+        .select(`
+          *,
+          sprint_projects (
+            project_id,
+            projects (
+              id,
+              name,
+              key
+            )
+          )
+        `)
         .order("start_date", { ascending: false });
 
-      if (sprintsError) throw sprintsError;
+      if (sprintsError) {
+        console.error("Error fetching sprints:", sprintsError);
+        throw sprintsError;
+      }
 
-      // For each sprint, fetch linked projects
-      const sprintsWithProjects = await Promise.all(
-        (sprintsData || []).map(async (sprint) => {
-          const { data: projectLinks } = await supabase
-            .from("sprint_projects")
-            .select(`
-              project_id,
-              projects:project_id (
-                id,
-                name,
-                key
-              )
-            `)
-            .eq("sprint_id", sprint.id);
+      // Transform data to match expected structure
+      const sprintsWithProjects = (sprintsData || []).map((sprint: any) => ({
+        ...sprint,
+        projects: sprint.sprint_projects?.map((sp: any) => sp.projects).filter(Boolean) || [],
+      }));
 
-          return {
-            ...sprint,
-            projects: projectLinks?.map(link => link.projects).filter(Boolean) || [],
-          };
-        })
-      );
-
-      setSprints(sprintsWithProjects as any);
+      setSprints(sprintsWithProjects);
     } catch (error: any) {
       console.error("Error fetching sprints:", error);
-      toast.error("Erro ao carregar sprints");
+      toast.error("Erro ao carregar sprints: " + (error.message || "Erro desconhecido"));
     } finally {
       setLoading(false);
     }
   };
+
+  if (!user) {
+    return (
+      <div className="container mx-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-muted-foreground">Você precisa estar autenticado para ver as sprints</p>
+        </div>
+      </div>
+    );
+  }
 
   const statusColors = {
     planning: "bg-gray-500",

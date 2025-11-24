@@ -1,0 +1,12 @@
+.git
+.gitignore
+node_modules
+**/bin
+**/obj
+**/*.user
+**/*.swp
+**/*.suo
+**/*.userosscache
+**/*.sln.docstates
+.env
+frontend

@@ -1,0 +1,6 @@
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.Infrastructure\obj\Debug\net8.0\TaskBora.Infrastructure.csproj.AssemblyReference.cache
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.Infrastructure\obj\Debug\net8.0\TaskBora.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.Infrastructure\obj\Debug\net8.0\TaskBora.Infrastructure.AssemblyInfoInputs.cache
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.Infrastructure\obj\Debug\net8.0\TaskBora.Infrastructure.AssemblyInfo.cs
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.Infrastructure\obj\Debug\net8.0\TaskBora.Infrastructure.csproj.CoreCompileInputs.cache
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.Infrastructure\obj\Debug\net8.0\TaskBora.Infrastructure.sourcelink.json

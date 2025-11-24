@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { taskService } from "@/application/tasks/taskService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,21 +66,14 @@ export default function SprintBoard({ sprint, projectId, onBack }: SprintBoardPr
   const fetchSprintTasks = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("sprint_id", sprint.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const data = await taskService.getSprintTasks(sprint.id);
 
-      if (error) throw error;
-      
       // Transform data to match interface (without assignees for now)
-      const tasksWithAssignees = (data || []).map(task => ({
+      const tasksWithAssignees = (data || []).map((task) => ({
         ...task,
-        task_assignees: []
+        task_assignees: [],
       }));
-      
+
       setTasks(tasksWithAssignees);
     } catch (error: any) {
       console.error("Error fetching sprint tasks:", error);
@@ -92,12 +85,7 @@ export default function SprintBoard({ sprint, projectId, onBack }: SprintBoardPr
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ status: newStatus })
-        .eq("id", taskId);
-
-      if (error) throw error;
+      await taskService.updateTaskStatus(taskId, newStatus);
 
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
@@ -119,12 +107,7 @@ export default function SprintBoard({ sprint, projectId, onBack }: SprintBoardPr
 
   const handleRemoveFromSprint = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ sprint_id: null })
-        .eq("id", taskId);
-
-      if (error) throw error;
+      await taskService.setTaskSprint(taskId, null);
 
       setTasks((prevTasks) => prevTasks.filter((task) => task.id !== taskId));
       toast.success("Task removida da sprint");

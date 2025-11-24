@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { taskService } from "@/application/tasks/taskService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Database } from "@/integrations/supabase/types";
+import { Task } from "@/types/task.types";
 import {
   Dialog,
   DialogContent,
@@ -28,21 +30,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-interface Task {
-  id: string;
-  title: string;
-  description: string | null;
-  status: string;
-  priority: string;
-  estimated_hours: number | null;
-  actual_hours: number | null;
-  due_date: string | null;
-  created_by: string;
-  created_at: string;
-  deleted_at: string | null;
-  project_id: string;
-}
 
 interface TaskDialogProps {
   taskId: string | null;
@@ -117,15 +104,7 @@ export default function TaskDialog({
 
   const calculateDailyPoints = async (selectedDate: string, hours: number, projectId: string) => {
     try {
-      // Buscar todas as tasks do projeto com due_date
-      const { data: projectTasks, error } = await supabase
-        .from("tasks")
-        .select("id, estimated_hours, due_date")
-        .eq("project_id", projectId)
-        .not("due_date", "is", null)
-        .is("deleted_at", null);
-
-      if (error) throw error;
+      const projectTasks = await taskService.getProjectTasks(projectId);
 
       // Calcular pontos já alocados no dia selecionado (excluindo a task atual)
       const tasksOnDate = (projectTasks || [])
@@ -195,13 +174,9 @@ export default function TaskDialog({
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("id", taskId)
-        .single();
+      const data = await taskService.getTaskById(taskId);
 
-      if (error) throw error;
+      if (!data) throw new Error("Task não encontrada");
 
       setTask(data);
       setTitle(data.title);
@@ -212,18 +187,14 @@ export default function TaskDialog({
       setActualHours(data.actual_hours?.toString() || "");
       setDueDate(data.due_date || "");
       setUserStoryId((data as any).user_story_id || null);
-      
+
       // Buscar membros atribuídos
-      const { data: assignees } = await supabase
-        .from("task_assignees")
-        .select("user_id")
-        .eq("task_id", taskId);
-      
-      setAssignedMembers(assignees?.map(a => a.user_id) || []);
-      
+      const assignees = await taskService.getTaskAssignees(taskId);
+      setAssignedMembers(assignees);
+
       // Buscar user stories após carregar a task
       fetchUserStoriesForProject(data.project_id);
-      
+
       // Buscar due_date do projeto
       const { data: projectData } = await supabase
         .from("projects")
@@ -267,22 +238,16 @@ export default function TaskDialog({
 
     try {
       setSaving(true);
-      
-      const { error } = await supabase
-        .from("tasks")
-        .update({
-          title: title.trim(),
-          description: description.trim() || null,
-          priority,
-          status,
-          estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
-          actual_hours: actualHours ? parseFloat(actualHours) : null,
-          due_date: dueDate || null,
-          user_story_id: userStoryId,
-        })
-        .eq("id", taskId);
-
-      if (error) throw error;
+      await taskService.updateTask(taskId, {
+        title: title.trim(),
+        description: description.trim() || null,
+        priority,
+        status,
+        estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
+        actual_hours: actualHours ? parseFloat(actualHours) : null,
+        due_date: dueDate || null,
+        user_story_id: userStoryId as any,
+      });
 
       // Atualizar assignees
       await handleUpdateAssignees();
@@ -326,63 +291,31 @@ export default function TaskDialog({
     try {
       setSavingAssignees(true);
 
-      // Buscar assignees atuais
-      const { data: currentAssignees } = await supabase
-        .from("task_assignees")
-        .select("user_id")
-        .eq("task_id", taskId);
+      const currentAssignees = await taskService.getTaskAssignees(taskId);
 
-      const currentUserIds = currentAssignees?.map(a => a.user_id) || [];
-      
-      // Identificar novos assignees
-      const newAssignees = assignedMembers.filter(
-        userId => !currentUserIds.includes(userId)
-      );
-      
-      // Identificar assignees removidos
-      const removedAssignees = currentUserIds.filter(
-        userId => !assignedMembers.includes(userId)
+      const { added, removed } = await taskService.updateTaskAssignees(
+        taskId,
+        assignedMembers,
+        currentAssignees
       );
 
-      // Remover assignees
-      if (removedAssignees.length > 0) {
-        const { error: deleteError } = await supabase
-          .from("task_assignees")
-          .delete()
-          .eq("task_id", taskId)
-          .in("user_id", removedAssignees);
-
-        if (deleteError) throw deleteError;
+      if (removed.length > 0) {
+        console.info("Assignees removidos", removed);
       }
 
-      // Adicionar novos assignees
-      if (newAssignees.length > 0) {
-        const assigneesToInsert = newAssignees.map(userId => ({
-          task_id: taskId,
-          user_id: userId,
-        }));
-
-        const { error: insertError } = await supabase
-          .from("task_assignees")
-          .insert(assigneesToInsert);
-
-        if (insertError) throw insertError;
-
+      if (added.length > 0) {
         // Buscar perfis dos novos assignees
         const { data: profiles } = await supabase
           .from("profiles")
           .select("id, full_name, nickname")
-          .in("id", newAssignees);
+          .in("id", added);
 
-        // Enviar notificações para novos assignees
-        for (const userId of newAssignees) {
-          const profile = profiles?.find(p => p.id === userId);
+        for (const userId of added) {
+          const profile = profiles?.find((p) => p.id === userId);
           const assigneeName = profile?.nickname || profile?.full_name || "Usuário";
 
-          // Enviar notificação do navegador
           sendBrowserNotification(assigneeName);
 
-          // Enviar email
           try {
             await supabase.functions.invoke("send-task-assignment-email", {
               body: {
@@ -396,7 +329,6 @@ export default function TaskDialog({
             });
           } catch (emailError) {
             console.error("Error sending email:", emailError);
-            // Não bloqueia o fluxo se o email falhar
           }
         }
       }
@@ -412,12 +344,7 @@ export default function TaskDialog({
     if (!taskId) return;
 
     try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ deleted_at: new Date().toISOString() })
-        .eq("id", taskId);
-
-      if (error) throw error;
+      await taskService.softDeleteTask(taskId);
 
       toast.success("Task inativada com sucesso!");
       onTaskUpdated?.();
@@ -433,12 +360,7 @@ export default function TaskDialog({
 
     try {
       setSaving(true);
-      const { error } = await supabase
-        .from("tasks")
-        .update({ deleted_at: null })
-        .eq("id", taskId);
-
-      if (error) throw error;
+      await taskService.reactivateTask(taskId);
 
       toast.success("Task reativada com sucesso!");
       onTaskUpdated?.();

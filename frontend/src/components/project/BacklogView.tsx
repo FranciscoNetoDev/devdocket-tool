@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { taskService } from "@/application/tasks/taskService";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,22 +66,34 @@ export default function BacklogView({ projectId, projectKey }: BacklogViewProps)
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("project_id", projectId)
-        .is("sprint_id", null)
-        .order("priority", { ascending: false })
-        .order("created_at", { ascending: false });
+      const data = await taskService.getProjectBacklogTasks(projectId, {
+        includeDeleted: true,
+      });
 
-      if (error) throw error;
-      
+      const priorityOrder: Record<string, number> = {
+        critical: 3,
+        high: 2,
+        medium: 1,
+        low: 0,
+      };
+
+      const sorted = (data || []).sort((a, b) => {
+        const priorityDiff =
+          (priorityOrder[b.priority] ?? 0) - (priorityOrder[a.priority] ?? 0);
+
+        if (priorityDiff !== 0) return priorityDiff;
+
+        return (
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      });
+
       // Transform to match interface
-      const tasksWithAssignees = (data || []).map(task => ({
+      const tasksWithAssignees = sorted.map((task) => ({
         ...task,
-        task_assignees: []
+        task_assignees: [],
       }));
-      
+
       setTasks(tasksWithAssignees);
     } catch (error: any) {
       console.error("Error fetching backlog:", error);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { taskService } from "@/application/tasks/taskService";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -66,16 +66,7 @@ export default function AddTasksToSprintDialog({
   const fetchBacklogTasks = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("id, title, description, priority, status")
-        .eq("project_id", projectId)
-        .is("sprint_id", null)
-        .is("deleted_at", null)
-        .order("priority", { ascending: false })
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
+      const data = await taskService.getProjectBacklogTasks(projectId);
       setTasks(data || []);
     } catch (error: any) {
       console.error("Error fetching backlog tasks:", error);
@@ -102,15 +93,11 @@ export default function AddTasksToSprintDialog({
     try {
       setAdding(true);
 
-      // Update each task individually
-      for (const taskId of selectedTasks) {
-        const { error } = await supabase
-          .from("tasks")
-          .update({ sprint_id: sprintId })
-          .eq("id", taskId);
-
-        if (error) throw error;
-      }
+      await Promise.all(
+        selectedTasks.map((taskId) =>
+          taskService.setTaskSprint(taskId, sprintId)
+        )
+      );
 
       toast.success(
         `${selectedTasks.length} ${

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Task } from "@/types/task.types";
-import { TaskService } from "@/services/taskService";
+import { taskService } from "@/application/tasks/taskService";
 import { toast } from "sonner";
 
 export const useTasks = (projectId: string | null) => {
@@ -12,7 +12,7 @@ export const useTasks = (projectId: string | null) => {
 
     try {
       setLoading(true);
-      const data = await TaskService.getProjectTasks(projectId);
+      const data = await taskService.getProjectTasks(projectId);
       setTasks(data);
     } catch (error: any) {
       console.error("Error fetching tasks:", error);

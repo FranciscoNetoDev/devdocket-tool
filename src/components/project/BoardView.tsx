@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { taskService } from "@/application/tasks/taskService";
 import {
   DndContext,
   DragEndEvent,
@@ -99,24 +100,14 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      
-      // Buscar tasks ativas do projeto sem sprint
-      const { data, error } = await supabase
-        .from("tasks")
-        .select("*")
-        .eq("project_id", projectId)
-        .is("sprint_id", null)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+      const data = await taskService.getProjectBacklogTasks(projectId);
 
-      if (error) throw error;
-      
       // Transform to match interface
-      const tasksWithAssignees = (data || []).map(task => ({
+      const tasksWithAssignees = (data || []).map((task) => ({
         ...task,
-        task_assignees: []
+        task_assignees: [],
       }));
-      
+
       setTasks(tasksWithAssignees);
     } catch (error: any) {
       console.error("Error fetching tasks:", error);
@@ -140,13 +131,8 @@ export default function BoardView({ projectId, projectKey }: BoardViewProps) {
    */
   const updateTaskStatus = async (taskId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ status: newStatus as any }) // Type assertion necessário para enum
-        .eq("id", taskId);
+      await taskService.updateTaskStatus(taskId, newStatus as any);
 
-      if (error) throw error;
-      
       toast.success("✅ Status da task atualizado!");
     } catch (error: any) {
       console.error("❌ Erro ao atualizar status:", error);

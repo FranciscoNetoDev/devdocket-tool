@@ -6,7 +6,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{468E
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "frontend", "frontend", "{2FF78179-EB31-403D-8813-E9E36597ED53}"
 ProjectSection(SolutionItems) = preProject
-frontend/README.md = frontend/README.md
+package.json = package.json
+package-lock.json = package-lock.json
+tsconfig.json = tsconfig.json
+tsconfig.app.json = tsconfig.app.json
+tsconfig.node.json = tsconfig.node.json
+vite.config.ts = vite.config.ts
+README.md = README.md
 EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskBora.Domain", "backend\\TaskBora.Domain\\TaskBora.Domain.csproj", "{F6327891-1188-4278-8FA5-D70F077CC345}"

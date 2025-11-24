@@ -1,0 +1,6 @@
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.CrossCutting\obj\Debug\net8.0\TaskBora.CrossCutting.csproj.AssemblyReference.cache
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.CrossCutting\obj\Debug\net8.0\TaskBora.CrossCutting.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.CrossCutting\obj\Debug\net8.0\TaskBora.CrossCutting.AssemblyInfoInputs.cache
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.CrossCutting\obj\Debug\net8.0\TaskBora.CrossCutting.AssemblyInfo.cs
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.CrossCutting\obj\Debug\net8.0\TaskBora.CrossCutting.csproj.CoreCompileInputs.cache
+C:\Users\TID\source\repos\devdocket-tool\backend\TaskBora.CrossCutting\obj\Debug\net8.0\TaskBora.CrossCutting.sourcelink.json

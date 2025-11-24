@@ -1,0 +1,65 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31912.275
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "backend", "backend", "{468ECA84-5894-40CB-A8CF-FAAE361B1DE1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "frontend", "frontend", "{2FF78179-EB31-403D-8813-E9E36597ED53}"
+ProjectSection(SolutionItems) = preProject
+package.json = package.json
+package-lock.json = package-lock.json
+tsconfig.json = tsconfig.json
+tsconfig.app.json = tsconfig.app.json
+tsconfig.node.json = tsconfig.node.json
+vite.config.ts = vite.config.ts
+README.md = README.md
+EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskBora.Domain", "backend\\TaskBora.Domain\\TaskBora.Domain.csproj", "{F6327891-1188-4278-8FA5-D70F077CC345}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskBora.Application", "backend\\TaskBora.Application\\TaskBora.Application.csproj", "{46FD33D1-F17F-4EB8-8A74-777CBD405347}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskBora.Infrastructure", "backend\\TaskBora.Infrastructure\\TaskBora.Infrastructure.csproj", "{E21FD12B-DBA3-473B-9422-6C09C8221812}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskBora.CrossCutting", "backend\\TaskBora.CrossCutting\\TaskBora.CrossCutting.csproj", "{88CC702B-18C8-4F5B-B370-0FCC0C16E08D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TaskBora.Presentation.Api", "backend\\TaskBora.Presentation.Api\\TaskBora.Presentation.Api.csproj", "{2D50D1A7-DFBF-49E3-84E8-7063F369CAED}"
+EndProject
+Global
+GlobalSection(SolutionConfigurationPlatforms) = preSolution
+Debug|Any CPU = Debug|Any CPU
+Release|Any CPU = Release|Any CPU
+EndGlobalSection
+GlobalSection(ProjectConfigurationPlatforms) = postSolution
+{F6327891-1188-4278-8FA5-D70F077CC345}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{F6327891-1188-4278-8FA5-D70F077CC345}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{F6327891-1188-4278-8FA5-D70F077CC345}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{F6327891-1188-4278-8FA5-D70F077CC345}.Release|Any CPU.Build.0 = Release|Any CPU
+{46FD33D1-F17F-4EB8-8A74-777CBD405347}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{46FD33D1-F17F-4EB8-8A74-777CBD405347}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{46FD33D1-F17F-4EB8-8A74-777CBD405347}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{46FD33D1-F17F-4EB8-8A74-777CBD405347}.Release|Any CPU.Build.0 = Release|Any CPU
+{E21FD12B-DBA3-473B-9422-6C09C8221812}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{E21FD12B-DBA3-473B-9422-6C09C8221812}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{E21FD12B-DBA3-473B-9422-6C09C8221812}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{E21FD12B-DBA3-473B-9422-6C09C8221812}.Release|Any CPU.Build.0 = Release|Any CPU
+{88CC702B-18C8-4F5B-B370-0FCC0C16E08D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{88CC702B-18C8-4F5B-B370-0FCC0C16E08D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{88CC702B-18C8-4F5B-B370-0FCC0C16E08D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{88CC702B-18C8-4F5B-B370-0FCC0C16E08D}.Release|Any CPU.Build.0 = Release|Any CPU
+{2D50D1A7-DFBF-49E3-84E8-7063F369CAED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+{2D50D1A7-DFBF-49E3-84E8-7063F369CAED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+{2D50D1A7-DFBF-49E3-84E8-7063F369CAED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+{2D50D1A7-DFBF-49E3-84E8-7063F369CAED}.Release|Any CPU.Build.0 = Release|Any CPU
+EndGlobalSection
+GlobalSection(SolutionProperties) = preSolution
+HideSolutionNode = FALSE
+EndGlobalSection
+GlobalSection(NestedProjects) = preSolution
+{F6327891-1188-4278-8FA5-D70F077CC345} = {468ECA84-5894-40CB-A8CF-FAAE361B1DE1}
+{46FD33D1-F17F-4EB8-8A74-777CBD405347} = {468ECA84-5894-40CB-A8CF-FAAE361B1DE1}
+{E21FD12B-DBA3-473B-9422-6C09C8221812} = {468ECA84-5894-40CB-A8CF-FAAE361B1DE1}
+{88CC702B-18C8-4F5B-B370-0FCC0C16E08D} = {468ECA84-5894-40CB-A8CF-FAAE361B1DE1}
+{2D50D1A7-DFBF-49E3-84E8-7063F369CAED} = {468ECA84-5894-40CB-A8CF-FAAE361B1DE1}
+EndGlobalSection
+EndGlobal

@@ -60,6 +60,8 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+> Unified solution: open `TaskBora.sln` in the repo root to access the .NET backend projects (under the `backend` solution folder) alongside the frontend assets from one place.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/c4dcd739-3efb-41fd-ae68-ec2cbcf8df63) and click on Share -> Publish.

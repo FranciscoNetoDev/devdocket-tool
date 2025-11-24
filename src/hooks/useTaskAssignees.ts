@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { TaskService } from "@/services/taskService";
+import { taskService } from "@/application/tasks/taskService";
 import { NotificationService } from "@/services/notificationService";
-import { toast } from "sonner";
 
 export const useTaskAssignees = (taskId: string | null) => {
   const [assignedMembers, setAssignedMembers] = useState<string[]>([]);
@@ -11,7 +10,7 @@ export const useTaskAssignees = (taskId: string | null) => {
     if (!taskId) return;
 
     try {
-      const assignees = await TaskService.getTaskAssignees(taskId);
+      const assignees = await taskService.getTaskAssignees(taskId);
       setAssignedMembers(assignees);
     } catch (error: any) {
       console.error("Error loading assignees:", error);
@@ -31,10 +30,10 @@ export const useTaskAssignees = (taskId: string | null) => {
       setLoading(true);
 
       // Buscar assignees atuais
-      const currentAssignees = await TaskService.getTaskAssignees(taskId);
+      const currentAssignees = await taskService.getTaskAssignees(taskId);
 
       // Atualizar assignees
-      const { added, removed } = await TaskService.updateTaskAssignees(
+      const { added, removed } = await taskService.updateTaskAssignees(
         taskId,
         newAssignees,
         currentAssignees

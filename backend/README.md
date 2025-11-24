@@ -3,8 +3,8 @@
 This folder contains the new .NET 8 solution replacing Supabase with a SQL Server-backed, domain-driven architecture.
 
 ## Solution layout
-- Open the root `TaskBora.sln` from the repository root to load **all backend projects** plus the **frontend** (currently kept as a solution item) in the same Visual Studio solution.
-- Backend projects are grouped under a `backend` solution folder; frontend `package.json`, `tsconfig*`, and `vite.config.ts` are added as solution items so you can manage both halves in one view.
+- Open the root `TaskBora.sln` to load all backend projects plus the `frontend/` folder in the same solution view.
+- Backend projects are grouped under a `backend` solution folder; the `frontend/` folder is listed separately so you can scaffold and manage the Angular client alongside the API.
 
 ## Projects
 - **TaskBora.Domain**: Entities, value objects, and repository interfaces for projects, tasks, sprints, and users.

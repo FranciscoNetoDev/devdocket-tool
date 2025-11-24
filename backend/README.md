@@ -1,17 +1,21 @@
 # TaskBora Backend (.NET 8, DDD)
 
-This folder contains the new .NET 8 solution replacing Supabase with a PostgreSQL-backed, domain-driven architecture.
+This folder contains the new .NET 8 solution replacing Supabase with a SQL Server-backed, domain-driven architecture.
+
+## Solution layout
+- Open the root `TaskBora.sln` from the repository root to load **all backend projects** plus the **frontend** (currently kept as a solution item) in the same Visual Studio solution.
+- Backend projects are grouped under a `backend` solution folder; frontend `package.json`, `tsconfig*`, and `vite.config.ts` are added as solution items so you can manage both halves in one view.
 
 ## Projects
 - **TaskBora.Domain**: Entities, value objects, and repository interfaces for projects, tasks, sprints, and users.
 - **TaskBora.Application**: Application services for tasks, projects, sprints, and user profiles.
-- **TaskBora.Infrastructure**: EF Core PostgreSQL persistence with repository implementations.
+- **TaskBora.Infrastructure**: EF Core SQL Server persistence with repository implementations.
 - **TaskBora.CrossCutting**: Dependency injection wiring and shared options.
 - **TaskBora.Presentation.Api**: ASP.NET Core Web API exposing endpoints aligned with the former Supabase interactions.
 
 ## Running locally
-1. Install .NET 8 SDK and PostgreSQL.
-2. Update `TaskBora.Presentation.Api/appsettings.json` with your connection string.
+1. Install .NET 8 SDK and SQL Server (localdb or full SQL Server instance).
+2. Update `TaskBora.Presentation.Api/appsettings.json` with your SQL Server connection string.
 3. From `backend/`, run `dotnet restore`, `dotnet ef database update`, then `dotnet run --project TaskBora.Presentation.Api`.
 
 ## Migration notes

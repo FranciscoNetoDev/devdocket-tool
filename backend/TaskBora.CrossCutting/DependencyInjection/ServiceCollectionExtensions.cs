@@ -18,7 +18,7 @@ public static class ServiceCollectionExtensions
         configuration.GetSection(DatabaseOptions.SectionName).Bind(databaseOptions);
 
         services.Configure<DatabaseOptions>(configuration.GetSection(DatabaseOptions.SectionName));
-        services.AddDbContext<TaskBoraDbContext>(options => options.UseNpgsql(databaseOptions.ConnectionString));
+        services.AddDbContext<TaskBoraDbContext>(options => options.UseSqlServer(databaseOptions.ConnectionString));
 
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();

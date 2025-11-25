@@ -1,73 +1,29 @@
-# Welcome to your Lovable project
+# TaskBora
 
-## Project info
+This repository hosts the backend (.NET) and the React frontend together at the solution root.
 
-**URL**: https://lovable.dev/projects/c4dcd739-3efb-41fd-ae68-ec2cbcf8df63
+## Structure
+- `TaskBora.Domain/`, `TaskBora.Application/`, `TaskBora.Infrastructure/`, `TaskBora.CrossCutting/`, `TaskBora.Presentation.Api/` — .NET backend projects.
+- `TaskBora.Web/` — React client that now targets the .NET API directly for data flows.
+- `TaskBora.sln` — solution file that opens all backend projects and the web client from one place.
+- `docker-compose.yml` — spins up SQL Server and the Web API without installing the .NET SDK locally.
 
-## How can I edit this code?
+## Getting started
+1. Open `TaskBora.sln` in Visual Studio or JetBrains Rider to work with the backend projects and the web client together.
+2. React frontend (API-first):
+   - `cd TaskBora.Web && npm install`
+   - Create `.env` with `VITE_API_BASE_URL=http://localhost:8080`.
+   - `npm run dev`
+3. Backend API: `cd TaskBora.Presentation.Api && dotnet run` (or use Docker Compose below). The API automatically applies EF Core migrations on startup using the configured SQL Server connection string.
 
-There are several ways of editing your application.
+## Run the stack with Docker Compose
+1. Ensure Docker is available on your machine.
+2. From the repository root, run `docker-compose up --build`.
+3. The API will be available on `http://localhost:8080` and will connect to the SQL Server container automatically.
+4. Migrations are applied automatically on API startup. If you prefer to run them manually, you can still run:
+   - `docker-compose exec api dotnet ef database update --project TaskBora.Infrastructure --startup-project TaskBora.Presentation.Api`
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/c4dcd739-3efb-41fd-ae68-ec2cbcf8df63) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/c4dcd739-3efb-41fd-ae68-ec2cbcf8df63) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Notes
+- Frontend services now call the .NET API only; Supabase configuration is no longer needed for project/task data. Auth will remain on Supabase until it is replaced.
+- Refer to `BACKEND.md` for backend setup and SQL Server migration details.
+- If you prefer running locally without Docker, install the .NET 8 SDK and SQL Server, then update `TaskBora.Presentation.Api/appsettings.json` with your local connection string.

@@ -22,7 +22,11 @@ repo/
 │  │  └─ sprints/              # Sprint planning/boards
 │  ├─ shared/                  # UI kit, directives, guards, interceptors, state utils
 │  └─ app/                     # Shell, routing, layout, top-level providers
-└─ backend/                    # .NET solution
+├─ TaskBora.Domain/            # Domain layer (C#)
+├─ TaskBora.Application/       # Application layer (C#)
+├─ TaskBora.Infrastructure/    # Infrastructure layer (C#)
+├─ TaskBora.CrossCutting/      # Cross-cutting concerns (C#)
+└─ TaskBora.Presentation.Api/  # ASP.NET Core Web API
    ├─ DevDocket.sln
    ├─ src/
    │  ├─ Identity/             # Bounded context: auth, invites, profiles
@@ -67,5 +71,15 @@ repo/
 6. **Model domain entities** (Project, Task, Sprint, Invite, User) with value objects for IDs, email, etc.; implement repositories and specifications.
 7. **Expose REST endpoints** aligned to current front-end needs: auth, invites, projects, tasks, sprints, and profile.
 8. **Enable CI/tests** for both Angular (`ng test`, `ng e2e`) and .NET (`dotnet test`).
+
+## Execution references and current progress
+- The .NET API now exposes project/task endpoints consumed by the React services through `VITE_API_BASE_URL`, with Supabase kept only as a fallback while Angular is built.
+- `TaskBora.Web/src/lib/apiClient.ts` centralizes API calls so Angular services can reuse the same shape when ported.
+- `TaskBora.Presentation.Api/Controllers/ProjectsController.cs` now has user-scoped list, delete, and placeholder member routes; `TasksController` already covers backlog/detail/status operations.
+
+## Next migration steps
+1. Move remaining Supabase-bound UI flows (memberships, invites, retros, storage uploads) onto dedicated API endpoints and domain models.
+2. Replace React contexts/hooks with Angular services that call the new API client, maintaining the API-first + Supabase-fallback pattern until all flows are ported.
+3. Delete Supabase dependencies once all services and components rely solely on the .NET API and PostgreSQL/SQL Server persistence.
 
 This blueprint keeps the rewrite aligned to SOLID and DDD while mapping every current feature to the new stacks.

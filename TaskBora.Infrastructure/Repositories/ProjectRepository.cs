@@ -20,6 +20,12 @@ public class ProjectRepository : IProjectRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task DeleteAsync(Project project, CancellationToken cancellationToken = default)
+    {
+        _dbContext.Projects.Remove(project);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<Project?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _dbContext.Projects.Include("_tasks").Include("_sprints").FirstOrDefaultAsync(p => p.Id == id, cancellationToken);

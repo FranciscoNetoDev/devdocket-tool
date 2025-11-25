@@ -4,20 +4,20 @@ WORKDIR /src
 
 # Copy solution and project files
 COPY TaskBora.sln ./
-COPY backend/TaskBora.Domain/TaskBora.Domain.csproj backend/TaskBora.Domain/
-COPY backend/TaskBora.Application/TaskBora.Application.csproj backend/TaskBora.Application/
-COPY backend/TaskBora.Infrastructure/TaskBora.Infrastructure.csproj backend/TaskBora.Infrastructure/
-COPY backend/TaskBora.CrossCutting/TaskBora.CrossCutting.csproj backend/TaskBora.CrossCutting/
-COPY backend/TaskBora.Presentation.Api/TaskBora.Presentation.Api.csproj backend/TaskBora.Presentation.Api/
+COPY TaskBora.Domain/TaskBora.Domain.csproj TaskBora.Domain/
+COPY TaskBora.Application/TaskBora.Application.csproj TaskBora.Application/
+COPY TaskBora.Infrastructure/TaskBora.Infrastructure.csproj TaskBora.Infrastructure/
+COPY TaskBora.CrossCutting/TaskBora.CrossCutting.csproj TaskBora.CrossCutting/
+COPY TaskBora.Presentation.Api/TaskBora.Presentation.Api.csproj TaskBora.Presentation.Api/
 
 # Restore
 RUN dotnet restore TaskBora.sln
 
 # Copy the rest of the source
-COPY backend/ ./backend/
+COPY . .
 
 # Build and publish
-WORKDIR /src/backend/TaskBora.Presentation.Api
+WORKDIR /src/TaskBora.Presentation.Api
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime image

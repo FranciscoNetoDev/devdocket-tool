@@ -1,3 +1,4 @@
+using System;
 using Microsoft.AspNetCore.Mvc;
 using TaskBora.Application.Contracts;
 using TaskBora.Application.DTOs;
@@ -18,6 +19,13 @@ public class ProjectsController : ControllerBase
         _projectService = projectService;
         _sprintService = sprintService;
         _taskService = taskService;
+    }
+
+    [HttpGet("user/{userId:guid}")]
+    public async Task<ActionResult<IReadOnlyCollection<ProjectDto>>> GetForUser(Guid userId, CancellationToken cancellationToken)
+    {
+        var projects = await _projectService.GetForUserAsync(userId, cancellationToken);
+        return Ok(projects);
     }
 
     [HttpGet("{id:guid}")]
@@ -41,11 +49,25 @@ public class ProjectsController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    {
+        await _projectService.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
+
     [HttpGet("{projectId:guid}/sprints")]
     public async Task<ActionResult<IReadOnlyCollection<SprintDto>>> GetSprints(Guid projectId, CancellationToken cancellationToken)
     {
         var sprints = await _sprintService.GetForProjectAsync(projectId, cancellationToken);
         return Ok(sprints);
+    }
+
+    [HttpGet("{projectId:guid}/members")]
+    public ActionResult<IReadOnlyCollection<object>> GetMembers(Guid projectId)
+    {
+        // Memberships are still modeled on the frontend via Supabase; the DDD model will be expanded in the next iteration.
+        return Ok(Array.Empty<object>());
     }
 
     [HttpPost("{projectId:guid}/sprints")]

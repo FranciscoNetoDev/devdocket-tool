@@ -17,7 +17,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: backend/TaskBora.Presentation.Api/Dockerfile
+      dockerfile: TaskBora.Presentation.Api/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       Database__ConnectionString: "Server=sqlserver,1433;Database=TaskBora;User Id=sa;Password=Your_password123;TrustServerCertificate=True"
@@ -26,6 +26,3 @@ services:
     depends_on:
       sqlserver:
         condition: service_healthy
-    # Enable hot reload by mounting the backend folder if desired
-    volumes:
-      - ./backend:/src/backend

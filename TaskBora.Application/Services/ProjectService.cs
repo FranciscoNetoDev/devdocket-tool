@@ -33,6 +33,12 @@ public class ProjectService : IProjectService
         return projects.Select(ToDto).ToArray();
     }
 
+    public async Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var project = await _projectRepository.GetByIdAsync(id, cancellationToken) ?? throw new InvalidOperationException("Project not found");
+        await _projectRepository.DeleteAsync(project, cancellationToken);
+    }
+
     public async Task UpdateAsync(Guid id, string name, string? description, CancellationToken cancellationToken = default)
     {
         var project = await _projectRepository.GetByIdAsync(id, cancellationToken) ?? throw new InvalidOperationException("Project not found");

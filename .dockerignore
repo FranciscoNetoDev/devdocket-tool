@@ -9,4 +9,4 @@ node_modules
 **/*.userosscache
 **/*.sln.docstates
 .env
-frontend
+TaskBora.Web
